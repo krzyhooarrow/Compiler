@@ -6,36 +6,50 @@ from lekser.lex import Lexer
 
 class Grammar(object):
     tokens = Lexer().tokens
+
     # program -> DECLARE declarations BEGIN commands END
     # 2 | BEGIN commands END
 
-    def p_program_without_libs(p):
-        'program : BEGIN command END'
+    def p_program_with_libs(p):
+        'program : DECLARE declarations BEGIN commands END'
         p[0] = p[1]
 
+    def p_program_without_libs(p):
+        'program : BEGIN commands END'
+        p[0] = p[1]
 
-    # 3
     # 4 declarations -> declarations , pidentifier
     # 5 | declarations , pidentifier (num :num )
     # 6 | pidentifier
     # 7 | pidentifier (num :num )
-    # 8
-    # 9 commands -> commands command
-    # 10 | command
-    # def p_commands_commands(p):
-    #     'commands : num'
-    #     p[0] = (p[1])
 
-    def p_commands_command(p):
-        'command : command command'
-        p[0] = (p[1],p[2])
-
-    def p_command_num(p):
-        'command : NUM'
+    def p_declarations_multi(p):
+        'declarations : declarations COMMA PIDENTIFIER'
         p[0] = p[1]
 
+    def p_declarations_multi_pidentifier_num(p):
+        'declarations : declarations COMMA PIDENTIFIER LEFT_BRACKET NUM COLON NUM RIGHT_BRACKET'
+        p[0] = p[1]
 
-    # 11
+    def p_declarations_pidentifier(p):
+        'declarations : PIDENTIFIER'
+        p[0] = p[1]
+
+    def p_declarations_pidentifier_num(p):
+        'declarations : PIDENTIFIER LEFT_BRACKET NUM COLON NUM RIGHT_BRACKET'
+        p[0] = p[1]
+
+    # 9 commands -> commands command
+    # 10 | command
+
+    def p_commands_multi(p):
+        'commands : commands command'
+        p[0] = (p[1], p[2])
+
+    def p_commands_single(p):
+        'commands : command'
+        p[0] = p[1]
+
     # 12 command -> identifier ASSIGN expression ;
     # 13 | IF condition THEN commands ELSE commands ENDIF
     # 14 | IF condition THEN commands ENDIF
@@ -45,6 +59,44 @@ class Grammar(object):
     # 18 | FOR pidentifier FROM value DOWNTO value DO commands ENDFOR
     # 19 | READ identifier ;
     # 20 | WRITE value ;
+
+    def p_command_assign(p):
+        'command : identifier ASSIGN expression SEMICOLON'
+        p[0] = p[1]
+
+    def p_command_if_else(p):
+        'command : IF condition THEN commands ELSE commands ENDIF'
+        p[0] = p[1]
+
+    def p_command_if(p):
+        'command : IF condition THEN commands ENDIF'
+        p[0] = p[1]
+
+    def p_command_while_do(p):
+        'command : WHILE condition DO commands ENDWHILE'
+        p[0] = p[1]
+
+
+    def p_command_do_while(p):
+        'command : DO commands WHILE condition ENDDO'
+        p[0] = p[1]
+
+    def p_command_from_upto(p):
+        'command : FOR PIDENTIFIER FROM value TO value DO commands ENDFOR'
+        p[0] = p[1]
+
+    def p_command_from_downto(p):
+        'command : FOR PIDENTIFIER FROM value DOWNTO value DO commands ENDFOR'
+        p[0] = p[1]
+
+    def p_command_read(p):
+        'command : READ identifier SEMICOLON'
+        p[0] = p[1]
+
+    def p_command_write(p):
+        'command : WRITE value SEMICOLON'
+        p[0] = p[1]
+
     # 21
     # 22 expression -> value
     # 23 | value PLUS value
@@ -52,116 +104,98 @@ class Grammar(object):
     # 25 | value TIMES value
     # 26 | value DIV value
     # 27 | value MOD value
-    # 28
+
+    def p_expression_value(p):
+        'expression : value'
+        p[0] = p[1]
+
+    def p_expression_plus(p):
+        'expression : value PLUS value'
+        p[0] = p[1]
+
+    def p_expression_minus(p):
+        'expression : value MINUS value'
+        p[0] = p[1]
+
+    def p_expression_times(p):
+        'expression : value TIMES value'
+        p[0] = p[1]
+
+    def p_expression_div(p):
+        'expression : value DIV value'
+        p[0] = p[1]
+
+    def p_expression_mod(p):
+        'expression : value MOD value'
+        p[0] = p[1]
+
     # 29 condition -> value EQ value
     # 30 | value NEQ value
     # 31 | value LE value
     # 32 | value GE value
     # 33 | value LEQ value
     # 34 | value GEQ value
-    # 35
+
+    def p_condition_equals(p):
+        'condition : value EQ value'
+        p[0] = p[1]
+
+    def p_condition_not_equals(p):
+        'condition : value NEQ value'
+        p[0] = p[1]
+
+    def p_condition_less(p):
+        'condition : value LE value'
+        p[0] = p[1]
+
+    def p_condition_greater(p):
+        'condition : value GE value'
+        p[0] = p[1]
+
+    def p_condition_less_or_equal(p):
+        'condition : value LEQ value'
+        p[0] = p[1]
+
+    def p_condition_greater_or_equal(p):
+        'condition : value GEQ value'
+        p[0] = p[1]
+
+
     # 36 value -> num
     # 37 | identifier
 
-    # def p_value_num(p):
-    #     'value : num'
-    #     p[0] = p[1]
-    #
-    # def p_value_identifier(p):
-    #     'value : identifier'
-    #     p[0] = p[1]
-    # 38
+    def p_value_num(p):
+        'value : NUM'
+        p[0] = p[1]
+
+    def p_value_identifier(p):
+        'value : identifier'
+        p[0] = p[1]
+
+
     # 39 identifier -> pidentifier
     # 40 | pidentifier ( pidentifier )
     # 41 | pidentifier (num )
 
-    # def p_identifier(p):
-    #     'identifier : pidentifier'
-    #     p[0] = p[1]
-    #
-    # def p_identifier_pidentifier_pidentifier(p):
-    #     'identifier : pidentifier LEFT_BRACKET pidentifier RIGHT_BRACKET'
-    #     p[0] = p[1]
-    #
-    #
-    # def p_identifier_pidentifier_num(p):
-    #     'identifier : pidentifier LEFT_BRACKET NUM RIGHT_BRACKET'
-    #     p[0] = p[1]
+    def p_identifier_pidentifier(p):
+        'identifier : PIDENTIFIER'
+        p[0] = p[1]
+
+    def p_identifier_pidentifier_pidentifier(p):
+        'identifier : PIDENTIFIER LEFT_BRACKET PIDENTIFIER RIGHT_BRACKET'
+        p[0] = p[1]
 
 
-#
-#
-# def p_expression_plus(p):
-#     'expression : expression PLUS term'
-#     p[0] = p[1] + p[3]
-#
-#
-# def p_expression_minus(p):
-#     'expression : expression MINUS term'
-#     p[0] = p[1] - p[3]
-#
-#
-# def p_expression_term(p):
-#     'expression : term'
-#     p[0] = p[1]
-#
-#
-# def p_term_times(p):
-#     'term : term TIMES factor'
-#     p[0] = p[1] * p[3]
-#
-#
-# def p_term_div(p):
-#     'term : term DIVIDE factor'
-#     p[0] = p[1] / p[3]
-#
-#
-# def p_term_factor(p):
-#     'term : factor'
-#     p[0] = p[1]
-#
-#
-# def p_factor_num(p):
-#     'factor : NUMBER'
-#     p[0] = p[1]
-#
-#
-# def p_factor_expr(p):
-#     'factor : LPAREN expression RPAREN'
-#     p[0] = p[2]
-
-    # Error rule for syntax errors
+    def p_identifier_pidentifier_num(p):
+        'identifier : PIDENTIFIER LEFT_BRACKET NUM RIGHT_BRACKET'
+        p[0] = p[1]
 
 
     def p_error(p):
         print("Syntax error in input!")
 
-        # Build the parser
-
-    data = '''
-    5
-    '''
-
 
     parser = yacc.yacc()
 
-    # while True:
-    #     try:
-    #         s = raw_input('calc > ')
-    #     except EOFError:
-    #         break
-    #     if not s: continue
-    #     result = parser.parse(s)
-    #     print(result)
-
-
-# while True:
-#     try:
-#         s = raw_input('calc > ')
-#     except EOFError:
-#         break
-#     if not s: continue
-#     result = parser.parse(s)
-#     print(result)
 
 gramar = Grammar()
