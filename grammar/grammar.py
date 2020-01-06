@@ -7,18 +7,19 @@ from lekser.lex import Lexer
 class Grammar(object):
     tokens = Lexer().tokens
 
+
     # program -> DECLARE declarations BEGIN commands END
     # 2 | BEGIN commands END
 
     def p_program_with_libs(p):
         'program : DECLARE declarations BEGIN commands END'
         p[0] = ('DECLARE', p[2], 'BEGIN', p[4], 'END')
-        print(p[0])
+        # print(p[0])
 
     def p_program_without_libs(p):
         'program : BEGIN commands END'
         p[0] = ('BEGIN', p[2], 'END')
-        print(p[0])
+        # print(p[0])
 
     # 4 declarations -> declarations , pidentifier
     # 5 | declarations , pidentifier (num :num )
@@ -26,19 +27,19 @@ class Grammar(object):
     # 7 | pidentifier (num :num )
 
     def p_declarations_multi(p):
-        'declarations : declarations COMMA PIDENTIFIER'
+        'declarations : declarations COMMA pidentifier'
         p[0] = (p[1], 'COMMA', p[3])
 
     def p_declarations_multi_pidentifier_num(p):
-        'declarations : declarations COMMA PIDENTIFIER LEFT_BRACKET NUM COLON NUM RIGHT_BRACKET'
+        'declarations : declarations COMMA pidentifier LEFT_BRACKET NUM COLON NUM RIGHT_BRACKET'
         p[0] = (p[1], 'COMMA', p[3], 'LEFT_BRACKET', p[5], 'COLON', p[7], 'RIGHT_BRACKET')
 
     def p_declarations_pidentifier(p):
-        'declarations : PIDENTIFIER'
+        'declarations : pidentifier'
         p[0] = (p[1])
 
     def p_declarations_pidentifier_num(p):
-        'declarations : PIDENTIFIER LEFT_BRACKET NUM COLON NUM RIGHT_BRACKET'
+        'declarations : pidentifier LEFT_BRACKET NUM COLON NUM RIGHT_BRACKET'
         p[0] = (p[1], 'LEFT_BRACKET', p[3], 'COLON', p[5], 'RIGHT_BRACKET')
 
     # 9 commands -> commands command
@@ -84,11 +85,11 @@ class Grammar(object):
         p[0] = ('DO', p[2], 'WHILE', p[4], 'ENDDO')
 
     def p_command_from_upto(p):
-        'command : FOR PIDENTIFIER FROM value TO value DO commands ENDFOR'
+        'command : FOR pidentifier FROM value TO value DO commands ENDFOR'
         p[0] = ('FOR', p[2], 'FROM', p[4], 'TO', p[6], 'DO', p[8], 'ENDFOR')
 
     def p_command_from_downto(p):
-        'command : FOR PIDENTIFIER FROM value DOWNTO value DO commands ENDFOR'
+        'command : FOR pidentifier FROM value DOWNTO value DO commands ENDFOR'
         p[0] = ('FOR', p[2], 'FROM', p[4], 'DOWNTO', p[6], 'DO', p[8], 'ENDFOR')
 
     def p_command_read(p):
@@ -180,16 +181,16 @@ class Grammar(object):
     # 41 | pidentifier (num )
 
     def p_identifier_pidentifier(p):
-        'identifier : PIDENTIFIER'
+        'identifier : pidentifier'
         p[0] = (p[1])
 
     def p_identifier_pidentifier_pidentifier(p):
-        'identifier : PIDENTIFIER LEFT_BRACKET PIDENTIFIER RIGHT_BRACKET'
+        'identifier : pidentifier LEFT_BRACKET pidentifier RIGHT_BRACKET'
         p[0] = (p[1], 'LEFT_BRACKET', p[3], 'RIGHT_BRACKET')
 
 
     def p_identifier_pidentifier_num(p):
-        'identifier : PIDENTIFIER LEFT_BRACKET NUM RIGHT_BRACKET'
+        'identifier : pidentifier LEFT_BRACKET NUM RIGHT_BRACKET'
         p[0] = (p[1], 'LEFT_BRACKET', p[3], 'RIGHT_BRACKET')
 
 
@@ -197,7 +198,24 @@ class Grammar(object):
         print("Syntax error in input!")
 
 
+
+
+
+
+    input = '/home/krzyhoo/Desktop/Compiler/examples/program0.imp'
+    output = 'output.txt'
+
     parser = yacc.yacc()
+    file = open(input, "r")
+    try:
+        parsed = parser.parse(file.read(), tracking=True)
+    except Exception as e:
+        print(e)
+        exit()
+    fw = open(output, "w")
+    print(f'{parsed}')
+    fw.write(f'{parsed}')
 
 
-gramar = Grammar()
+
+
