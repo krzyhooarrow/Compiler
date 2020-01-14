@@ -8,13 +8,12 @@ from lekser.lex import Lexer
 tokens = Lexer().tokens
 replacement = ['JZERO','JNEG','JPOS','JUMP']
 variables = {}  # contains var name and address
+# temporary_variables = {} # contains loop iterators
 arrays = {}  # contains array name and its address
 initialized_variables = set()  # contains already initialized vars
 current_instruction = 0
 register_number = 1  # memory counter
-stack = []
-valueJZERO = 0
-valueJUMP = 0
+
 ########################################################################################################################
 # Declaring 10 temporary registers
 
@@ -85,20 +84,15 @@ def p_commands_single(p):
 # 19 | READ identifier ;
 # 20 | WRITE value ;
 ########################################################################################################################
-
 ### KOMENDY ZWRACAJA ICH KOSZT
+
 def p_command_assign(p):
     'command : identifier ASSIGN expression SEMICOLON'
     variable_check(p[1][1], '0')
     initialized_variables.add(p[1][1])
-    global current_instruction
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
-    current_instruction += ASSIGMENT[1]+1
-    #
-    # koszt 0 bo zostal dodany juz w current instr  ASSIGMENT[1]+1
+
     p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}',ASSIGMENT[1]+1
-    # cost = ASSIGMENT[1] + 1
-    # stack.append((cost,p[0]))
 
 
 
@@ -118,14 +112,36 @@ def p_command_while_do(p):
 def p_command_do_while(p):
     'command : DO commands WHILE condition ENDDO'
     p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1]+p[2][1]+2)}', p[2][1] + p[4][1] + 3)
-        # ('DO', p[2][0], 'WHILE', p[4], 'ENDDO')
+
 
 
 def p_command_from_upto(p):
     'command : FOR pidentifier FROM value TO value DO commands ENDFOR'
-    p[0] = ('FOR', p[2], 'FROM', p[4], 'TO', p[6], 'DO', p[8][0], 'ENDFOR')
+
+    check_condition =  p_condition_greater_or_equal(['',p[4],'GEQ',p[6]])
+    # check_condition = ('',0)
+    new_variable(p[2], str(p.lineno(2)))
+    p[2] = ('variable', p[2])
+
+    put_from_at_p0 =  assign_value_to_variable(p[4], p[2])
+    put_to_at_p0 = assign_value_to_variable(p[6],p[2])
+
+    loop_begin = str(put_from_at_p0[0]) + f'\nSTORE {variables[p[2][1]]}' + str(put_to_at_p0[0]) +  f'\nSTORE 5',put_from_at_p0[1]+put_to_at_p0[1]+2
+                                                                                       # tymczasowy rejestr wartosci na koniec petli
+    increment_iterator = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}',3
+    condition_check = p_condition_greater_or_equal(['',p[2],'GEQ',p[6]])                 # tu musi byc ge
+
+    JUMP_DISTANCE =  -(increment_iterator[1] + condition_check[1] +4)
+    loop_cost = loop_begin[1]+p[8][1]+increment_iterator[1]+condition_check[1]+2
+
+    loop_condition = check_condition[0]+f'\nJZERO {loop_cost+1}'
+
+    p[0]=loop_condition+loop_begin[0]+p[8][0] +increment_iterator[0] + condition_check[0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}' ,loop_cost+check_condition[1]+1
+
+    remove_temporary_variable(p[2][1])
 
 
+    # p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}',ASSIGMENT[1]+1
 def p_command_from_downto(p):
     'command : FOR pidentifier FROM value DOWNTO value DO commands ENDFOR'
     p[0] = ('FOR', p[2], 'FROM', p[4], 'DOWNTO', p[6], 'DO', p[8], 'ENDFOR')
@@ -206,11 +222,8 @@ def p_condition_equals(p):
 
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
            ASSIGMENT2[0] + '\nSUB 1', ASSIGMENT1[1] + ASSIGMENT2[1] + 2
+    return p[0]
 
-    # w p0 jest var1-var2
-
-    cost = ASSIGMENT1[1] + ASSIGMENT2[1] + 2,0
-    # stack.append((cost,p[0]))
 
 def p_condition_not_equals(p):
     'condition : value NEQ value'
@@ -219,15 +232,25 @@ def p_condition_not_equals(p):
 
 def p_condition_less(p):
     'condition : value LE value'
-    p[0] = (p[1], 'LE', p[3])
+    ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
+    ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
+
+    p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
+           ASSIGMENT2[0] + f'\nSUB 1\nJZERO 1\nDEC', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
+    return p[0]
 
 
 
 
 def p_condition_greater(p):
     'condition : value GE value'
+    ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
+    ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    p[0] = (p[1], 'GE', p[3])
+    p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
+           ASSIGMENT2[0] + f'\nSUB 1\nJZERO 1\nINC', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
+    return p[0]
+
 
 
 
@@ -238,9 +261,7 @@ def p_condition_less_or_equal(p):
 
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
            ASSIGMENT2[0] + f'\nSUB 1\nJNEG 2\nSUB 0', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
-        #{JPOS + 4}                 #robi 1 krok do przodu jezeli to nie jest prawdą
-    # w p0 jest var2-var1. A nastepnie sprawdzenie JPOS czy
-
+    return p[0]
 
 
 def p_condition_greater_or_equal(p):
@@ -251,8 +272,7 @@ def p_condition_greater_or_equal(p):
 
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
            ASSIGMENT2[0] + f'\nSUB 1\nJPOS 2\nSUB 0', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
-        #{JPOS + 4}                 #robi 1 krok do przodu jezeli to nie jest prawdą
-    # w p0 jest var2-var1. A nastepnie sprawdzenie JPOS czy
+    return p[0]
 
 ########################################################################################################################
 # 36 value -> num
@@ -326,6 +346,10 @@ def new_variable(var_name, line_number):
         variables[var_name] = register_number
         # initialized_variables.add(var_name)
         register_number += 1
+
+
+def remove_temporary_variable(var_name):
+    variables.pop(var_name)
 
 
 def new_array(array_name, begin, end, line_number):
@@ -413,24 +437,12 @@ try:
     commands = parsed.split('\n')
     while i < len(commands):
         if commands[i].split()[0] in replacement:
-            # print(int(commands[i].split()[1]) + i)
             commands[i]= commands[i].split()[0] +' ' + str(int(commands[i].split()[1]) + i)
-            # commands[i].replace(commands[i].split()[1],str(int(commands[i].split()[1]) + i))
-            # commands[i].split()[1]= str(int(commands[i].split()[1]) + i)
-
-            # print(commands[i])
-            # print(i)
         i+=1
     PROGRAM = ''
     for command in commands:
         PROGRAM += command + '\n'
     print(PROGRAM)
-
-        # if lines.split()[0] in replacement:
-        #     value = parsed.split()[1]
-        #     parsed.replace(value,'value+5')
-    # parsed.replace()
-    # [int(s) for s in parsed.split() if s.isdigit()]
 
 except Exception as e:
     print(e)
@@ -438,10 +450,13 @@ except Exception as e:
 fw = open(output, "w")
 # print(f'{parsed}')
 # print(parsed.strip())
-# print(variables)
+print(variables)
 # print(arrays)
-# print(initialized_variables)
+print(initialized_variables)
+# print(temporary_variables)
 # fw.write(f'{parsed.strip()}')
 fw.write(PROGRAM)
+
+
 #       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output.txt
 
