@@ -118,25 +118,28 @@ def p_command_do_while(p):
 def p_command_from_upto(p):
     'command : FOR pidentifier FROM value TO value DO commands ENDFOR'
 
-    check_condition =  p_condition_greater_or_equal(['',p[4],'GEQ',p[6]])
-    # check_condition = ('',0)
+    loop_validation = p_condition_greater_or_equal(['',p[4],'GEQ',p[6]])
+    # samemu tez moze bym tu ifa dopisal zeby nie robilo zmiennej jak nie wchodzi w petle? zobaczymy co sie stanie.
+
     new_variable(p[2], str(p.lineno(2)))
     p[2] = ('variable', p[2])
 
-    put_from_at_p0 =  assign_value_to_variable(p[4], p[2])
-    put_to_at_p0 = assign_value_to_variable(p[6],p[2])
+    STORE_FROM =  assign_value_to_variable(p[4], p[2])
+    STORE_TO = assign_value_to_variable(p[6],p[2])
 
-    loop_begin = str(put_from_at_p0[0]) + f'\nSTORE {variables[p[2][1]]}' + str(put_to_at_p0[0]) +  f'\nSTORE 5',put_from_at_p0[1]+put_to_at_p0[1]+2
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + str(STORE_TO[0]) +  f'\nSTORE 5',STORE_FROM[1]+STORE_TO[1]+2
                                                                                        # tymczasowy rejestr wartosci na koniec petli
-    increment_iterator = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}',3
-    condition_check = p_condition_greater_or_equal(['',p[2],'GEQ',p[6]])                 # tu musi byc ge
+    ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}',3
 
-    JUMP_DISTANCE =  -(increment_iterator[1] + condition_check[1] +4)
-    loop_cost = loop_begin[1]+p[8][1]+increment_iterator[1]+condition_check[1]+2
+    LOOP_CONDITION_CHECK = p_condition_greater(['',p[2],'GE',p[6]])
 
-    loop_condition = check_condition[0]+f'\nJZERO {loop_cost+1}'
+    JUMP_DISTANCE =  -(ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] +4)
 
-    p[0]=loop_condition+loop_begin[0]+p[8][0] +increment_iterator[0] + condition_check[0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}' ,loop_cost+check_condition[1]+1
+    LOOP_SIZE = LOOP_CONSTANTS[1]+p[8][1]+ITERATOR_INCREMENTATION[1]+LOOP_CONDITION_CHECK[1]+2
+
+    FULL_LOOP_CONDITION = loop_validation[0]+f'\nJZERO {LOOP_SIZE+1}'
+
+    p[0]=FULL_LOOP_CONDITION+LOOP_CONSTANTS[0]+p[8][0] +ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}' ,LOOP_SIZE+loop_validation[1]+1
 
     remove_temporary_variable(p[2][1])
 
