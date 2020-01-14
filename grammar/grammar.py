@@ -216,7 +216,6 @@ def p_expression_mod(p):
 ########################################################################################################################
 def p_condition_equals(p):
     'condition : value EQ value'
-
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
@@ -227,7 +226,12 @@ def p_condition_equals(p):
 
 def p_condition_not_equals(p):
     'condition : value NEQ value'
-    p[0] = (p[1], 'NEQ', p[3])
+    ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
+    ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
+
+    p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
+           ASSIGMENT2[0] + '\nSUB 1\nJZERO 3\nSUB 0\nJUMP 2\nINC', ASSIGMENT1[1] + ASSIGMENT2[1] + 6
+    return p[0]
 
 
 def p_condition_less(p):
