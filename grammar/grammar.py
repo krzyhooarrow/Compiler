@@ -243,9 +243,8 @@ def p_condition_less(p):
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
-           ASSIGMENT2[0] + f'\nSUB 1\nJZERO 1\nDEC', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
+           ASSIGMENT2[0] + f'\nSUB 1\nJNEG 4\nJZERO 3\nSUB 0\nJUMP 2\nDEC', ASSIGMENT1[1] + ASSIGMENT2[1] + 7
     return p[0]
-
 
 
 
@@ -255,7 +254,7 @@ def p_condition_greater(p):
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
-           ASSIGMENT2[0] + f'\nSUB 1\nJZERO 1\nINC', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
+           ASSIGMENT2[0] + f'\nSUB 1\nJPOS 4\nJZERO 3\nSUB 0\nJUMP 2\nINC', ASSIGMENT1[1] + ASSIGMENT2[1] + 7
     return p[0]
 
 
