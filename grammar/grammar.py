@@ -131,12 +131,11 @@ def p_command_from_upto(p):
     STORE_FROM = assign_value_to_variable(p[4], p[2])
     STORE_TO = assign_value_to_variable(p[6], p[2])
 
-    # storuje wartość początkową pod k a wartość początkową storujemy pod 5 .
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + str(STORE_TO[0]) + f'\nSTORE 5', STORE_FROM[
-        1] + STORE_TO[1] + 2
-    # tymczasowy rejestr wartosci na koniec petli
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[
+        1] + 1
+  
     ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}', 3
-    # to gdzie ja to loaduje i storuje to sam musze wymyslic !!! chyba?
+  
 
     LOOP_CONDITION_CHECK = p_condition_greater(['', p[2], 'GE', p[6]])
 
@@ -148,10 +147,9 @@ def p_command_from_upto(p):
 
     p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
         0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1
-    # na 23 musi skakac
+ 
     remove_temporary_variable(p[2][1])
 
-    # p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}',ASSIGMENT[1]+1
 
 
 def p_command_from_downto(p):
@@ -163,14 +161,11 @@ def p_command_from_downto(p):
     p[2] = ('variable', p[2])
 
     STORE_FROM = assign_value_to_variable(p[4], p[2])
-    STORE_TO = assign_value_to_variable(p[6], p[2])
 
-    # storuje wartość początkową pod k a wartość początkową storujemy pod 5 .
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + str(STORE_TO[0]) + f'\nSTORE 5', STORE_FROM[
-        1] + STORE_TO[1] + 2
-    # tymczasowy rejestr wartosci na koniec petli
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[
+        1] + 1
+
     ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nDEC\nSTORE {variables[p[2][1]]}', 3
-    # to gdzie ja to loaduje i storuje to sam musze wymyslic !!! chyba?
 
     LOOP_CONDITION_CHECK = p_condition_less(['', p[2], 'LE', p[6]])
 
