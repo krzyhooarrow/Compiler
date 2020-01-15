@@ -14,6 +14,7 @@ initialized_variables = set()  # contains already initialized vars
 current_instruction = 0
 register_number = 1  # memory counter
 
+############# COMMANDS = tuple (string command, commands counter, temp vars if exists )
 
 ########################################################################################################################
 # Declaring 10 temporary registers
@@ -65,8 +66,7 @@ def p_declarations_array(p):
 ########################################################################################################################
 def p_commands_multi(p):
     'commands : commands command'
-    # print(current_instruction)
-    p[0] = (str(p[1][0]) + str(p[2][0]), p[1][1] + p[2][1])
+    p[0] = (str(p[1][0]) + str(p[2][0]), p[1][1] + p[2][1],p[1][2]+p[2][2])
 
 
 def p_commands_single(p):
@@ -94,34 +94,38 @@ def p_command_assign(p):
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
 
-    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1
+    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1,[]
+
 
 
 def p_command_if_else(p):
     'command : IF condition THEN commands ELSE commands ENDIF'
     p[0] = (str(p[2][0]) + f'\nJZERO {p[6][1] + 2}' + str(p[6][0]) + f'\nJUMP {p[4][1] + 1}' + str(p[4][0]),
-            p[2][1] + p[4][1] + p[6][1] + 2)
+            p[2][1] + p[4][1] + p[6][1] + 2,[])
 
 
 def p_command_if(p):
     'command : IF condition THEN commands ENDIF'
-    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 1}' + str(p[4][0]), p[2][1] + p[4][1] + 2)
+    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 1}' + str(p[4][0]), p[2][1] + p[4][1] + 2,[])
 
 
 def p_command_while_do(p):
     'command : WHILE condition DO commands ENDWHILE'
     p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 2}' + str(p[4][0]) + f'\nJUMP {-(p[4][1] + p[2][1] + 2)}',
-            p[2][1] + p[4][1] + 3)
+            p[2][1] + p[4][1] + 3,[])
     # cofamy sie o roznice na początek condition!!
 
 
 def p_command_do_while(p):
     'command : DO commands WHILE condition ENDDO'
-    p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1] + p[2][1] + 2)}', p[2][1] + p[4][1] + 3)
+    p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1] + p[2][1] + 2)}', p[2][1] + p[4][1] + 3,[])
 
 
 def p_command_from_upto(p):
     'command : FOR pidentifier FROM value TO value DO commands ENDFOR'
+
+    if p[2] in p[8][2]:
+        raise Exception('Nested variable already exists')
 
     loop_validation = p_condition_greater(['', p[4], 'GE', p[6]])
 
@@ -129,13 +133,10 @@ def p_command_from_upto(p):
     p[2] = ('variable', p[2])
 
     STORE_FROM = assign_value_to_variable(p[4], p[2])
-    STORE_TO = assign_value_to_variable(p[6], p[2])
 
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[
-        1] + 1
-  
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[1] + 1
+
     ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}', 3
-  
 
     LOOP_CONDITION_CHECK = p_condition_greater(['', p[2], 'GE', p[6]])
 
@@ -145,15 +146,19 @@ def p_command_from_upto(p):
 
     FULL_LOOP_CONDITION = loop_validation[0] + f'\nJZERO {LOOP_SIZE + 1}'
 
-    p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
-        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1
- 
-    remove_temporary_variable(p[2][1])
+    IN_LOOP_VARIABLES = get_nested_variables(p[2][1],p[8])
 
+    p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
+        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1,IN_LOOP_VARIABLES
+
+    remove_temporary_variable(p[2][1])
 
 
 def p_command_from_downto(p):
     'command : FOR pidentifier FROM value DOWNTO value DO commands ENDFOR'
+
+    if p[2] in p[8][2]:
+        raise Exception('Nested variable already exists')
 
     loop_validation = p_condition_less(['', p[4], 'LE', p[6]])
 
@@ -175,8 +180,10 @@ def p_command_from_downto(p):
 
     FULL_LOOP_CONDITION = loop_validation[0] + f'\nJZERO {LOOP_SIZE + 1}'
 
+    IN_LOOP_VARIABLES = get_nested_variables(p[2][1], p[8])
+
     p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
-        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1
+        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1,IN_LOOP_VARIABLES
 
     remove_temporary_variable(p[2][1])
 
@@ -185,13 +192,13 @@ def p_command_read(p):
     'command : READ identifier SEMICOLON'
     variable_check(p[2][1], '0')
     initialized_variables.add(p[2][1])
-    p[0] = f'\nGET\nSTORE {variables[p[2][1]]}', 2
+    p[0] = f'\nGET\nSTORE {variables[p[2][1]]}', 2,[]
 
 
 def p_command_write(p):
     'command : WRITE value SEMICOLON'
     ASSIGMENT = assign_value_to_variable(p[2], p[2])
-    p[0] = ASSIGMENT[0] + '\nPUT', ASSIGMENT[1] + 1
+    p[0] = ASSIGMENT[0] + '\nPUT', ASSIGMENT[1] + 1,[]
 
 
 ########################################################################################################################
@@ -370,6 +377,9 @@ def initialization_check(id, lineno):
         raise Exception("Error at: " + lineno + ' variable not initialized: ' + id)
 
 
+def loop_iterator_check(id, lineno):
+    if id in initialized_variables:
+        raise Exception("Error at: " + lineno + ' variable already exists: ' + id)
 ########################################################################################################################
 
 # Function creates new variable and stores its address in dict variables.
@@ -385,6 +395,7 @@ def new_variable(var_name, line_number):
 
 def remove_temporary_variable(var_name):
     variables.pop(var_name)
+
 
 
 def new_array(array_name, begin, end, line_number):
@@ -451,6 +462,15 @@ def store_constant(value):
             else:
                 STORE += '\nDEC'
     return STORE, counter
+
+
+
+def get_nested_variables(used_variables,nested_variables):
+    VARIABLES = [used_variables]
+    if len(nested_variables) == 3:
+        nested_variables[2].append(used_variables)
+        return nested_variables[2]
+    return VARIABLES
 
 
 #######################################################################################################################
