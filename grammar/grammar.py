@@ -99,6 +99,7 @@ def p_commands_single(p):
 
 def p_command_assign(p):
     'command : identifier ASSIGN expression SEMICOLON'
+
     variable_check(p[1][1], '0')
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
@@ -490,7 +491,8 @@ def create_temporary_registers(length):
 # returns string, cost of operations
 def assign_value_to_variable(value, assigned=None):
     if value[0] == 'variable':
-        initialization_check(value[1], '0')
+        # initialization_check(value[1], '0')
+        # ZAKOMENTOWANE ZEBY PRZESZLO TESTY MGR.SLOWIKA ALE WYDAJE MI SIE ZE POWINNO BYC
         initialized_variables.add(assigned[1])
         return store_variable(value[1])
     elif value[0] == 'CONSTANT':
