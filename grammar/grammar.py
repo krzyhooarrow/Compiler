@@ -12,7 +12,9 @@ variables = {}  # contains var name and address
 arrays = {}  # contains array name and its address
 initialized_variables = set()  # contains already initialized vars
 current_instruction = 0
+temp_vars = set()
 register_number = 1  # memory counter
+
 
 ############# COMMANDS = tuple (string command, commands counter, temp vars if exists )
 
@@ -59,6 +61,13 @@ def p_declarations_array(p):
     new_array(p[1], p[3], p[5], str(p.lineno(1)))
 
 
+def p_iterator(p):
+    'loop_iterator	: pidentifier'
+    new_variable(p[1], str(p.lineno(1)))
+    initialized_variables.add(p[1])
+    temp_vars.add(p[1])
+    p[0] = p[1]
+
 ########################################################################################################################
 
 # 9 commands -> commands command
@@ -66,7 +75,7 @@ def p_declarations_array(p):
 ########################################################################################################################
 def p_commands_multi(p):
     'commands : commands command'
-    p[0] = (str(p[1][0]) + str(p[2][0]), p[1][1] + p[2][1],p[1][2]+p[2][2])
+    p[0] = (str(p[1][0]) + str(p[2][0]), p[1][1] + p[2][1], p[1][2] + p[2][2])
 
 
 def p_commands_single(p):
@@ -94,42 +103,41 @@ def p_command_assign(p):
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
 
-    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1,[]
-
+    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1, []
 
 
 def p_command_if_else(p):
     'command : IF condition THEN commands ELSE commands ENDIF'
     p[0] = (str(p[2][0]) + f'\nJZERO {p[6][1] + 2}' + str(p[6][0]) + f'\nJUMP {p[4][1] + 1}' + str(p[4][0]),
-            p[2][1] + p[4][1] + p[6][1] + 2,[])
+            p[2][1] + p[4][1] + p[6][1] + 2, [])
 
 
 def p_command_if(p):
     'command : IF condition THEN commands ENDIF'
-    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 1}' + str(p[4][0]), p[2][1] + p[4][1] + 2,[])
+    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 1}' + str(p[4][0]), p[2][1] + p[4][1] + 2, [])
 
 
 def p_command_while_do(p):
     'command : WHILE condition DO commands ENDWHILE'
     p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 2}' + str(p[4][0]) + f'\nJUMP {-(p[4][1] + p[2][1] + 2)}',
-            p[2][1] + p[4][1] + 3,[])
+            p[2][1] + p[4][1] + 3, [])
     # cofamy sie o roznice na początek condition!!
 
 
 def p_command_do_while(p):
     'command : DO commands WHILE condition ENDDO'
-    p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1] + p[2][1] + 2)}', p[2][1] + p[4][1] + 3,[])
+    p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1] + p[2][1] + 2)}', p[2][1] + p[4][1] + 3, [])
+
 
 
 def p_command_from_upto(p):
-    'command : FOR pidentifier FROM value TO value DO commands ENDFOR'
+    'command : FOR loop_iterator FROM value TO value DO commands ENDFOR'
 
     if p[2] in p[8][2]:
         raise Exception('Nested variable already exists')
 
     loop_validation = p_condition_greater(['', p[4], 'GE', p[6]])
 
-    new_variable(p[2], str(p.lineno(2)))
     p[2] = ('variable', p[2])
 
     STORE_FROM = assign_value_to_variable(p[4], p[2])
@@ -146,23 +154,21 @@ def p_command_from_upto(p):
 
     FULL_LOOP_CONDITION = loop_validation[0] + f'\nJZERO {LOOP_SIZE + 1}'
 
-    IN_LOOP_VARIABLES = get_nested_variables(p[2][1],p[8])
+    IN_LOOP_VARIABLES = get_nested_variables(p[2][1], p[8])
 
     p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
-        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1,IN_LOOP_VARIABLES
+        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1, IN_LOOP_VARIABLES
 
     remove_temporary_variable(p[2][1])
 
 
 def p_command_from_downto(p):
-    'command : FOR pidentifier FROM value DOWNTO value DO commands ENDFOR'
+    'command : FOR loop_iterator FROM value DOWNTO value DO commands ENDFOR'
 
     if p[2] in p[8][2]:
         raise Exception('Nested variable already exists')
 
     loop_validation = p_condition_less(['', p[4], 'LE', p[6]])
-
-    new_variable(p[2], str(p.lineno(2)))
 
     p[2] = ('variable', p[2])
 
@@ -184,7 +190,7 @@ def p_command_from_downto(p):
     IN_LOOP_VARIABLES = get_nested_variables(p[2][1], p[8])
 
     p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
-        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1,IN_LOOP_VARIABLES
+        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1, IN_LOOP_VARIABLES
 
     remove_temporary_variable(p[2][1])
 
@@ -193,13 +199,13 @@ def p_command_read(p):
     'command : READ identifier SEMICOLON'
     variable_check(p[2][1], '0')
     initialized_variables.add(p[2][1])
-    p[0] = f'\nGET\nSTORE {variables[p[2][1]]}', 2,[]
+    p[0] = f'\nGET\nSTORE {variables[p[2][1]]}', 2, []
 
 
 def p_command_write(p):
     'command : WRITE value SEMICOLON'
     ASSIGMENT = assign_value_to_variable(p[2], p[2])
-    p[0] = ASSIGMENT[0] + '\nPUT', ASSIGMENT[1] + 1,[]
+    p[0] = ASSIGMENT[0] + '\nPUT', ASSIGMENT[1] + 1, []
 
 
 ########################################################################################################################
@@ -239,19 +245,18 @@ def p_expression_times(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
+    PREPARE_FOR_MULTIPLICATION = load_registers()[0], +load_registers()[1]
 
-    PREPARE_FOR_MULTIPLICATION =load_registers()[0],+load_registers()[1]
-
-    LOOP_DIST = load_least_significant_bit()[1]+check_if_LST_eq_0()[1]+add_subtotal_and_shift_by_2()[1]+2
+    LOOP_DIST = load_least_significant_bit()[1] + check_if_LST_eq_0()[1] + add_subtotal_and_shift_by_2()[1] + 2
 
     p[0] = (ASSIGMENT1[0] + f'\nSTORE 6' + \
-           ASSIGMENT2[0] + '\nSTORE 7'\
-        + PREPARE_FOR_MULTIPLICATION[0] + '\nLOAD 7' +\
-    end_if_equals_0(LOOP_DIST)[0] +\
-      load_least_significant_bit()[0] +\
-    check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 8'
+            ASSIGMENT2[0] + '\nSTORE 7' \
+            + PREPARE_FOR_MULTIPLICATION[0] + '\nLOAD 7' + \
+            end_if_equals_0(LOOP_DIST)[0] + \
+            load_least_significant_bit()[0] + \
+            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 8'
 
-    ,PREPARE_FOR_MULTIPLICATION[1]+ASSIGMENT1[1]+ASSIGMENT2[1]+LOOP_DIST+end_if_equals_0(0)[1]+3)
+            , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 3)
 
 
 def p_expression_div(p):
@@ -263,6 +268,8 @@ def p_expression_mod(p):
     'expression : value MOD value'
     p[0] = (p[1], 'MOD', p[3])
     # a mod n = a - (n * a/n)
+
+
 ########################################################################################################################
 # powers are stored in 9
 # adds in 8
@@ -275,26 +282,33 @@ def p_expression_mod(p):
 # 1 value 0
 
 def load_registers():
-    return '\nSUB 0\nINC\nSTORE 2\nDEC\nSTORE 8\nSTORE 9\nSTORE 1\nDEC\nSTORE 3',9
+    return '\nSUB 0\nINC\nSTORE 2\nDEC\nSTORE 8\nSTORE 9\nSTORE 1\nDEC\nSTORE 3', 9
 
-def load_least_significant_bit():   # w tym momencie mamy 1 lub 0 w rejestrze
-    return (f'\nSHIFT 3\nSHIFT 2\nSUB 7\nJNEG 2\nJUMP 3\nINC\nINC',7)
+
+def load_least_significant_bit():  # w tym momencie mamy 1 lub 0 w rejestrze
+    return (f'\nSHIFT 3\nSHIFT 2\nSUB 7\nJNEG 2\nJUMP 3\nINC\nINC', 7)
+
 
 def end_if_equals_0(loop_distance):
-    return (f'\nJZERO {loop_distance}',1)
+    return (f'\nJZERO {loop_distance}', 1)
 
 
 def check_if_LST_eq_0():
-    return (f'\nJZERO {add_subtotal_and_shift_by_2()[1]-divide_by_two()[1]-increase_power()[1]+1}',1)
+    return (f'\nJZERO {add_subtotal_and_shift_by_2()[1] - divide_by_two()[1] - increase_power()[1] + 1}', 1)
+
 
 def divide_by_two():
-    return ('\nLOAD 7\nSHIFT 3\nSTORE 7',3)
+    return ('\nLOAD 7\nSHIFT 3\nSTORE 7', 3)
+
 
 def increase_power():
-    return ('\nLOAD 9\nINC\nSTORE 9',3)
+    return ('\nLOAD 9\nINC\nSTORE 9', 3)
+
 
 def add_subtotal_and_shift_by_2():
-    return (f'\nLOAD 6\nSHIFT 9\nADD 8\nSTORE 8{increase_power()[0]}{divide_by_two()[0]}',4+divide_by_two()[1]+increase_power()[1])
+    return (f'\nLOAD 6\nSHIFT 9\nADD 8\nSTORE 8{increase_power()[0]}{divide_by_two()[0]}',
+            4 + divide_by_two()[1] + increase_power()[1])
+
 
 ########################################################################################################################
 # 29 condition -> value EQ value
@@ -419,6 +433,8 @@ def variable_check(id, lineno):
             raise Exception("Error at:  " + lineno + ': ' + id)
         else:
             raise Exception("Error at:  " + lineno + ': variable not declared: ' + str(id))
+    if id in temp_vars:
+        raise Exception("Error at: " + lineno + " cannot assign value to iterator")
 
 
 def initialization_check(id, lineno):
@@ -429,6 +445,8 @@ def initialization_check(id, lineno):
 def loop_iterator_check(id, lineno):
     if id in initialized_variables:
         raise Exception("Error at: " + lineno + ' variable already exists: ' + id)
+
+
 ########################################################################################################################
 
 # Function creates new variable and stores its address in dict variables.
@@ -444,7 +462,8 @@ def new_variable(var_name, line_number):
 
 def remove_temporary_variable(var_name):
     variables.pop(var_name)
-
+    initialized_variables.remove(var_name)
+    temp_vars.remove(var_name)
 
 
 def new_array(array_name, begin, end, line_number):
@@ -513,8 +532,7 @@ def store_constant(value):
     return STORE, counter
 
 
-
-def get_nested_variables(used_variables,nested_variables):
+def get_nested_variables(used_variables, nested_variables):
     VARIABLES = [used_variables]
     if len(nested_variables) == 3:
         nested_variables[2].append(used_variables)
