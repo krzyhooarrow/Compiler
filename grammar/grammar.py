@@ -6,13 +6,14 @@ from pip._vendor.distlib.compat import raw_input
 from lekser.lex import Lexer
 
 tokens = Lexer().tokens
-replacement = ['JZERO','JNEG','JPOS','JUMP']
+replacement = ['JZERO', 'JNEG', 'JPOS', 'JUMP']
 variables = {}  # contains var name and address
 # temporary_variables = {} # contains loop iterators
 arrays = {}  # contains array name and its address
 initialized_variables = set()  # contains already initialized vars
 current_instruction = 0
 register_number = 1  # memory counter
+
 
 ########################################################################################################################
 # Declaring 10 temporary registers
@@ -65,7 +66,8 @@ def p_declarations_array(p):
 def p_commands_multi(p):
     'commands : commands command'
     # print(current_instruction)
-    p[0] = (str(p[1][0]) + str(p[2][0]),p[1][1]+p[2][1])
+    p[0] = (str(p[1][0]) + str(p[2][0]), p[1][1] + p[2][1])
+
 
 def p_commands_single(p):
     'commands : command'
@@ -92,74 +94,109 @@ def p_command_assign(p):
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
 
-    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}',ASSIGMENT[1]+1
-
+    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1
 
 
 def p_command_if_else(p):
     'command : IF condition THEN commands ELSE commands ENDIF'
-    p[0] = (str(p[2][0]) + f'\nJZERO {p[6][1]+2}' + str(p[6][0]) +f'\nJUMP {p[4][1]+1}'+str(p[4][0]),p[2][1]+p[4][1]+p[6][1]+2)
+    p[0] = (str(p[2][0]) + f'\nJZERO {p[6][1] + 2}' + str(p[6][0]) + f'\nJUMP {p[4][1] + 1}' + str(p[4][0]),
+            p[2][1] + p[4][1] + p[6][1] + 2)
+
 
 def p_command_if(p):
     'command : IF condition THEN commands ENDIF'
-    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1]+1}' + str(p[4][0]), p[2][1] + p[4][1] + 2)
+    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 1}' + str(p[4][0]), p[2][1] + p[4][1] + 2)
+
 
 def p_command_while_do(p):
     'command : WHILE condition DO commands ENDWHILE'
-    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1]+2}' + str(p[4][0]) + f'\nJUMP {-(p[4][1]+p[2][1]+2)}', p[2][1] + p[4][1] + 3)
-                                                                            #cofamy sie o roznice na początek condition!!
+    p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 2}' + str(p[4][0]) + f'\nJUMP {-(p[4][1] + p[2][1] + 2)}',
+            p[2][1] + p[4][1] + 3)
+    # cofamy sie o roznice na początek condition!!
+
 
 def p_command_do_while(p):
     'command : DO commands WHILE condition ENDDO'
-    p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1]+p[2][1]+2)}', p[2][1] + p[4][1] + 3)
-
+    p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1] + p[2][1] + 2)}', p[2][1] + p[4][1] + 3)
 
 
 def p_command_from_upto(p):
     'command : FOR pidentifier FROM value TO value DO commands ENDFOR'
 
-    loop_validation = p_condition_greater_or_equal(['',p[4],'GEQ',p[6]])
-    # samemu tez moze bym tu ifa dopisal zeby nie robilo zmiennej jak nie wchodzi w petle? zobaczymy co sie stanie.
+    loop_validation = p_condition_greater(['', p[4], 'GE', p[6]])
 
     new_variable(p[2], str(p.lineno(2)))
     p[2] = ('variable', p[2])
 
-    STORE_FROM =  assign_value_to_variable(p[4], p[2])
-    STORE_TO = assign_value_to_variable(p[6],p[2])
+    STORE_FROM = assign_value_to_variable(p[4], p[2])
+    STORE_TO = assign_value_to_variable(p[6], p[2])
 
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + str(STORE_TO[0]) +  f'\nSTORE 5',STORE_FROM[1]+STORE_TO[1]+2
-                                                                                       # tymczasowy rejestr wartosci na koniec petli
-    ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}',3
+    # storuje wartość początkową pod k a wartość początkową storujemy pod 5 .
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + str(STORE_TO[0]) + f'\nSTORE 5', STORE_FROM[
+        1] + STORE_TO[1] + 2
+    # tymczasowy rejestr wartosci na koniec petli
+    ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}', 3
+    # to gdzie ja to loaduje i storuje to sam musze wymyslic !!! chyba?
 
-    LOOP_CONDITION_CHECK = p_condition_greater(['',p[2],'GE',p[6]])
+    LOOP_CONDITION_CHECK = p_condition_greater(['', p[2], 'GE', p[6]])
 
-    JUMP_DISTANCE =  -(ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] +4)
+    JUMP_DISTANCE = -(ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] + p[8][1] + 1)
 
-    LOOP_SIZE = LOOP_CONSTANTS[1]+p[8][1]+ITERATOR_INCREMENTATION[1]+LOOP_CONDITION_CHECK[1]+2
+    LOOP_SIZE = LOOP_CONSTANTS[1] + p[8][1] + ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] + 2
 
-    FULL_LOOP_CONDITION = loop_validation[0]+f'\nJZERO {LOOP_SIZE+1}'
+    FULL_LOOP_CONDITION = loop_validation[0] + f'\nJZERO {LOOP_SIZE + 1}'
 
-    p[0]=FULL_LOOP_CONDITION+LOOP_CONSTANTS[0]+p[8][0] +ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}' ,LOOP_SIZE+loop_validation[1]+1
-
+    p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
+        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1
+    # na 23 musi skakac
     remove_temporary_variable(p[2][1])
 
-
     # p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}',ASSIGMENT[1]+1
+
+
 def p_command_from_downto(p):
     'command : FOR pidentifier FROM value DOWNTO value DO commands ENDFOR'
-    p[0] = ('FOR', p[2], 'FROM', p[4], 'DOWNTO', p[6], 'DO', p[8], 'ENDFOR')
+
+    loop_validation = p_condition_less(['', p[4], 'LE', p[6]])
+
+    new_variable(p[2], str(p.lineno(2)))
+    p[2] = ('variable', p[2])
+
+    STORE_FROM = assign_value_to_variable(p[4], p[2])
+    STORE_TO = assign_value_to_variable(p[6], p[2])
+
+    # storuje wartość początkową pod k a wartość początkową storujemy pod 5 .
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + str(STORE_TO[0]) + f'\nSTORE 5', STORE_FROM[
+        1] + STORE_TO[1] + 2
+    # tymczasowy rejestr wartosci na koniec petli
+    ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nDEC\nSTORE {variables[p[2][1]]}', 3
+    # to gdzie ja to loaduje i storuje to sam musze wymyslic !!! chyba?
+
+    LOOP_CONDITION_CHECK = p_condition_less(['', p[2], 'LE', p[6]])
+
+    JUMP_DISTANCE = -(ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] + p[8][1] + 1)
+
+    LOOP_SIZE = LOOP_CONSTANTS[1] + p[8][1] + ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] + 2
+
+    FULL_LOOP_CONDITION = loop_validation[0] + f'\nJZERO {LOOP_SIZE + 1}'
+
+    p[0] = FULL_LOOP_CONDITION + LOOP_CONSTANTS[0] + p[8][0] + ITERATOR_INCREMENTATION[0] + LOOP_CONDITION_CHECK[
+        0] + f'\nJZERO 2 \nJUMP {JUMP_DISTANCE}', LOOP_SIZE + loop_validation[1] + 1
+
+    remove_temporary_variable(p[2][1])
 
 
 def p_command_read(p):
     'command : READ identifier SEMICOLON'
     variable_check(p[2][1], '0')
+    initialized_variables.add(p[2][1])
     p[0] = f'\nGET\nSTORE {variables[p[2][1]]}', 2
 
 
 def p_command_write(p):
     'command : WRITE value SEMICOLON'
     ASSIGMENT = assign_value_to_variable(p[2], p[2])
-    p[0] = ASSIGMENT[0] + '\nPUT',ASSIGMENT[1] + 1
+    p[0] = ASSIGMENT[0] + '\nPUT', ASSIGMENT[1] + 1
 
 
 ########################################################################################################################
@@ -182,7 +219,7 @@ def p_expression_plus(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
-          ASSIGMENT2[0] + '\nADD 1',ASSIGMENT1[1]+ASSIGMENT2[1]+2
+           ASSIGMENT2[0] + '\nADD 1', ASSIGMENT1[1] + ASSIGMENT2[1] + 2
 
 
 def p_expression_minus(p):
@@ -192,7 +229,6 @@ def p_expression_minus(p):
 
     p[0] = ASSIGMENT2[0] + f'\nSTORE 1' + \
            ASSIGMENT1[0] + '\nSUB 1', ASSIGMENT1[1] + ASSIGMENT2[1] + 2
-
 
 
 def p_expression_times(p):
@@ -247,7 +283,6 @@ def p_condition_less(p):
     return p[0]
 
 
-
 def p_condition_greater(p):
     'condition : value GE value'
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
@@ -256,8 +291,6 @@ def p_condition_greater(p):
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
            ASSIGMENT2[0] + f'\nSUB 1\nJPOS 4\nJZERO 3\nSUB 0\nJUMP 2\nINC', ASSIGMENT1[1] + ASSIGMENT2[1] + 7
     return p[0]
-
-
 
 
 def p_condition_less_or_equal(p):
@@ -279,6 +312,7 @@ def p_condition_greater_or_equal(p):
     p[0] = ASSIGMENT1[0] + f'\nSTORE 1' + \
            ASSIGMENT2[0] + f'\nSUB 1\nJPOS 2\nSUB 0', ASSIGMENT1[1] + ASSIGMENT2[1] + 4
     return p[0]
+
 
 ########################################################################################################################
 # 36 value -> num
@@ -398,7 +432,7 @@ def assign_value_to_variable(value, assigned=None):
 
 
 def store_variable(variable):
-    return f'\nLOAD {variables[variable]}',1
+    return f'\nLOAD {variables[variable]}', 1
 
 
 def store_constant(value):
@@ -443,8 +477,8 @@ try:
     commands = parsed.split('\n')
     while i < len(commands):
         if commands[i].split()[0] in replacement:
-            commands[i]= commands[i].split()[0] +' ' + str(int(commands[i].split()[1]) + i)
-        i+=1
+            commands[i] = commands[i].split()[0] + ' ' + str(int(commands[i].split()[1]) + i)
+        i += 1
     PROGRAM = ''
     for command in commands:
         PROGRAM += command + '\n'
@@ -462,7 +496,6 @@ print(initialized_variables)
 # print(temporary_variables)
 # fw.write(f'{parsed.strip()}')
 fw.write(PROGRAM)
-
 
 #       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output.txt
 
