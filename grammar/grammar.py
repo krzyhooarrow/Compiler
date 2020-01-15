@@ -163,6 +163,7 @@ def p_command_from_downto(p):
     loop_validation = p_condition_less(['', p[4], 'LE', p[6]])
 
     new_variable(p[2], str(p.lineno(2)))
+
     p[2] = ('variable', p[2])
 
     STORE_FROM = assign_value_to_variable(p[4], p[2])
@@ -235,7 +236,22 @@ def p_expression_minus(p):
 
 def p_expression_times(p):
     'expression : value TIMES value'
-    p[0] = (p[1], 'TIMES', p[3])
+    ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
+    ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
+
+
+    PREPARE_FOR_MULTIPLICATION =load_registers()[0],+load_registers()[1]
+
+    LOOP_DIST = load_least_significant_bit()[1]+check_if_LST_eq_0()[1]+add_subtotal_and_shift_by_2()[1]+2
+
+    p[0] = (ASSIGMENT1[0] + f'\nSTORE 6' + \
+           ASSIGMENT2[0] + '\nSTORE 7'\
+        + PREPARE_FOR_MULTIPLICATION[0] + '\nLOAD 7' +\
+    end_if_equals_0(LOOP_DIST)[0] +\
+      load_least_significant_bit()[0] +\
+    check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 8'
+
+    ,PREPARE_FOR_MULTIPLICATION[1]+ASSIGMENT1[1]+ASSIGMENT2[1]+LOOP_DIST+end_if_equals_0(0)[1]+3)
 
 
 def p_expression_div(p):
@@ -246,8 +262,41 @@ def p_expression_div(p):
 def p_expression_mod(p):
     'expression : value MOD value'
     p[0] = (p[1], 'MOD', p[3])
+    # a mod n = a - (n * a/n)
+########################################################################################################################
+# powers are stored in 9
+# adds in 8
+# first_val is stored at 7
+# second_val is stored at 6
+# 5 wolny
+# 4 wolny
+# 3 contains -1 number
+# 2 contains 1 number
+# 1 value 0
+
+def load_registers():
+    return '\nSUB 0\nINC\nSTORE 2\nDEC\nSTORE 8\nSTORE 9\nSTORE 1\nDEC\nSTORE 3',9
+
+def load_least_significant_bit():   # w tym momencie mamy 1 lub 0 w rejestrze
+    return (f'\nSHIFT 3\nSHIFT 2\nSUB 7\nJNEG 2\nJUMP 3\nINC\nINC',7)
+
+def end_if_equals_0(loop_distance):
+    return (f'\nJZERO {loop_distance}',1)
 
 
+def check_if_LST_eq_0():
+    return (f'\nJZERO {add_subtotal_and_shift_by_2()[1]-divide_by_two()[1]-increase_power()[1]+1}',1)
+
+def divide_by_two():
+    return ('\nLOAD 7\nSHIFT 3\nSTORE 7',3)
+
+def increase_power():
+    return ('\nLOAD 9\nINC\nSTORE 9',3)
+
+def add_subtotal_and_shift_by_2():
+    return (f'\nLOAD 6\nSHIFT 9\nADD 8\nSTORE 8{increase_power()[0]}{divide_by_two()[0]}',4+divide_by_two()[1]+increase_power()[1])
+
+########################################################################################################################
 # 29 condition -> value EQ value
 # 30 | value NEQ value
 # 31 | value LE value
@@ -477,7 +526,7 @@ def get_nested_variables(used_variables,nested_variables):
 
 
 input = '/home/krzyhoo/Desktop/Compiler/grammar/prog.txt'
-output = 'output.txt'
+output = 'output2.txt'
 
 create_temporary_registers(10)
 parser = yacc.yacc(
@@ -512,5 +561,5 @@ print(initialized_variables)
 # fw.write(f'{parsed.strip()}')
 fw.write(PROGRAM)
 
-#       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output.txt
+#       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output2.txt
 
