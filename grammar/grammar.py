@@ -324,7 +324,9 @@ def p_expression_div(p):
     # przystępujemy do dzielenia
     # ładujemy 2 i storujemy w 4 (miejsce gdy liczby są sobie równe)
     # zwracamy rejestr 4 przechowujący wynik dzielenia
-    p[0] = ASSIGMENT1[0] + f'\nSTORE 6\nSTORE 5\nJZERO {LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END}'+ \
+    p[0] = f'{load_registers_for_division()[0]}' + \
+           ASSIGMENT1[0] + \
+           f'\nSTORE 6\nSTORE 5\nJZERO {LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END}'+ \
            f'{change_sign_flag()[0]}' + \
            ASSIGMENT2[0] + f'\nSTORE 7' \
            f'{change_sign_flag()[0]}' \
@@ -339,7 +341,8 @@ def p_expression_div(p):
            \
            f'{change_value_if_sign_flag_is_on()[0]}' \
            f'\nLOAD 8' \
-        , 512
+        , ASSIGMENT2[1]+ASSIGMENT1[1]+2*change_sign_flag()[1]+9+\
+           check_sign_of_value()[1]+assert_0_division(0)[1]+assert_bigger_value_division(1,1)[1]+divide()[1]+change_value_if_sign_flag_is_on()[1]+load_registers_for_division()[1]
 
 ########################################################################################################################
 # w 1 flaga znaku = 0 gdy są tego samego znaku
@@ -412,7 +415,7 @@ def assert_bigger_value_division(jump_end, jzero_value):
 
 
 def load_registers_for_division():
-    return '\nSUB 0\nINC\nSTORE 9\nSTORE 2\nDEC\nSTORE 1\nSTORE 4\nSTORE 3', 8
+    return '\nSUB 0\nINC\nSTORE 9\nDEC\nSTORE 8\nSTORE 4\nSTORE 3', 7
 
 
 ########################################################################################################################
