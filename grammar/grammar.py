@@ -251,13 +251,13 @@ def p_expression_times(p):
     LOOP_DIST = load_least_significant_bit()[1] + check_if_LST_eq_0()[1] + add_subtotal_and_shift_by_2()[1] + 2
 
     p[0] = (ASSIGMENT1[0] + f'\nSTORE 6' + \
-            ASSIGMENT2[0] + '\nSTORE 7' \
+            ASSIGMENT2[0] + '\nSTORE 7' + negate_value_if_0()[0] \
             + PREPARE_FOR_MULTIPLICATION[0] + '\nLOAD 7' + \
             end_if_equals_0(LOOP_DIST)[0] + \
             load_least_significant_bit()[0] + \
-            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 8'
+            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 5\nJZERO 3\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8\nLOAD 8'
 
-            , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 3)
+            , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 9+negate_value_if_0()[1])
 
 
 ###########
@@ -273,6 +273,9 @@ def p_expression_times(p):
 # 3 contains -1 number
 # 2 contains 1 number
 # 1 value 0
+def negate_value_if_0():
+    return (f'\nJNEG 4\nSUB 0\nSTORE 5\nJUMP 7\nSUB 7\nSUB 7\nSTORE 7\nSUB 0\nINC\nSTORE 5',10)
+
 
 def load_registers():
     return '\nSUB 0\nINC\nSTORE 2\nDEC\nSTORE 8\nSTORE 9\nSTORE 1\nDEC\nSTORE 3', 9
