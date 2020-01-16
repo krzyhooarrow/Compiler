@@ -68,6 +68,7 @@ def p_iterator(p):
     temp_vars.add(p[1])
     p[0] = p[1]
 
+
 ########################################################################################################################
 
 # 9 commands -> commands command
@@ -128,7 +129,6 @@ def p_command_while_do(p):
 def p_command_do_while(p):
     'command : DO commands WHILE condition ENDDO'
     p[0] = (p[2][0] + p[4][0] + f'\nJPOS 3\nJNEG 2\nJUMP {-(p[4][1] + p[2][1] + 2)}', p[2][1] + p[4][1] + 3, [])
-
 
 
 def p_command_from_upto(p):
@@ -260,17 +260,9 @@ def p_expression_times(p):
             , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 3)
 
 
-def p_expression_div(p):
-    'expression : value DIV value'
-    p[0] = (p[1], 'DIV', p[3])
+###########
 
-
-def p_expression_mod(p):
-    'expression : value MOD value'
-    p[0] = (p[1], 'MOD', p[3])
-    # a mod n = a - (n * a/n)
-
-
+# mnozenie sie buguje , pierwsza musi byc ujemna pamietac !
 ########################################################################################################################
 # powers are stored in 9
 # adds in 8
@@ -312,6 +304,128 @@ def add_subtotal_and_shift_by_2():
 
 
 ########################################################################################################################
+def p_expression_div(p):
+    'expression : value DIV value'
+    ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
+    ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
+
+    TOTAL_DISTANCE = change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
+
+    LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END = TOTAL_DISTANCE + assert_bigger_value_division(1, 1)[1]
+    LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END = LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END + assert_0_division(1)[1] + check_sign_of_value()[1]+\
+        2*change_sign_flag()[1]+ASSIGMENT2[1]+1
+
+    # ładujemy rejestry wszystkie i ich wartości
+    # liczba pierwsza jest umieszczana w r6 i r5
+    # zmiana w fladze dla każdej z liczb
+    # przemnożenie obu liczb na dodatnie dla łatwosci operacji
+    # sprawdzamy czy nie dzielimy przez 0. Jak tak to skok na koniec
+    # sprawdzamy czy nie dzielimy przez liczbę wiekszą bądź równą sobie
+    # przystępujemy do dzielenia
+    # ładujemy 2 i storujemy w 4 (miejsce gdy liczby są sobie równe)
+    # zwracamy rejestr 4 przechowujący wynik dzielenia
+    p[0] = ASSIGMENT1[0] + f'\nSTORE 6\nSTORE 5\nJZERO {LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END}'+ \
+           f'{change_sign_flag()[0]}' + \
+           ASSIGMENT2[0] + f'\nSTORE 7' \
+           f'{change_sign_flag()[0]}' \
+           f'{check_sign_of_value()[0]}' + \
+           assert_0_division(LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END)[0] + \
+           assert_bigger_value_division(TOTAL_DISTANCE, divide()[1]+1)[0] + \
+           \
+           \
+           divide()[0] + \
+           \
+           f'\nJUMP 4\nSUB 0\nINC\nSTORE 8' \
+           \
+           f'{change_value_if_sign_flag_is_on()[0]}' \
+           f'\nLOAD 8' \
+        , 512
+
+########################################################################################################################
+# w 1 flaga znaku = 0 gdy są tego samego znaku
+# w 6 liczba 1  --- liczba dzielona  dzielimy 6 : 7
+# w 7 liczba 2  --- liczba wieksza
+# w 8 temp value (lacznie)
+# w 9 leca potegi, zaczyna sie od 1
+# w 5 current value bedzie przechowywane
+# w 4 wartosc ktora zostala wyznaczona
+
+def change_sign_flag():
+    return '\nJPOS 4\nLOAD 1\nDEC\nJUMP 3\nLOAD 1\nINC\nSTORE 1', 7
+
+
+def check_sign_of_value():
+    return '\nLOAD 6\nJPOS 5\nSUB 6\nSUB 6\nSTORE 6\nSTORE 5\nLOAD 7\nJPOS 4\nSUB 7\nSUB 7\nSTORE 7', 11
+
+
+def increase_div_value():
+    return (f'{increase_power()[0]}\nLOAD 5\nSHIFT 9\nSTORE 5', increase_power()[1] + 3)
+
+
+def change_value_if_sign_flag_is_on():
+    return (f'\nLOAD 1\nJPOS 6\nJNEG 5\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8', 7)
+    # p0 = p4 * -1
+
+
+def divide():
+    return f'' \
+           f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {increase_power()[1]+2}' \
+           f'{increase_power()[0]}' \
+           f'\nJUMP {-(increase_power()[1] + 4)}' \
+           f'{decrease_power()[0]}' \
+           f'{update_temp_value()[0]}' \
+           f'{check_if_power_equals_1(0,add_power_to_sum()[1]+clear_power()[1]+2)[0]}' \
+            \
+           f'{add_power_to_sum()[0]}' \
+           f'{clear_power()[0]}' \
+           f'\nJUMP {-(check_if_power_equals_1(0,0)[1]+update_temp_value()[1]+increase_power()[1]+add_power_to_sum()[1]+clear_power()[1] +decrease_power()[1]+ 5)}' \
+           f'', 6 + increase_power()[1]+decrease_power()[1]+update_temp_value()[1]+check_if_power_equals_1(1,1)[1]\
+           +add_power_to_sum()[1]+clear_power()[1]
+
+
+# f'{check_if_equals(add_power_to_sum()[1]+clear_power()[1]+2)[0]}' \ przed add power
+def check_if_power_equals_1(cond_dist,end_dist):
+    return (f'\nJPOS {cond_dist+4}\nJZERO {cond_dist+3}\nLOAD 9\nJZERO {end_dist}',4)
+
+def decrease_power():
+    return ('\nLOAD 9\nDEC\nSTORE 9', 3)
+
+def update_temp_value():
+    return ('\nLOAD 7\nSHIFT 9\nSUB 5\nSTORE 3\nSUB 3\nSUB 3\nSTORE 5',7)
+
+def add_power_to_sum():
+    return (f'\nSUB 0\nINC\nSHIFT 9\nADD 8\nSTORE 8',5)
+
+def check_if_equals(end_dist):
+    return (f'\nLOAD 5\nJZERO {end_dist}',2)
+
+def clear_power():
+    return (f'\nSUB 0\nINC\nSTORE 9',3)
+
+
+def assert_0_division(jump_end):
+    return f'\nJZERO {jump_end}', 1
+
+
+def assert_bigger_value_division(jump_end, jzero_value):
+    return f'\nSUB 6\nJZERO {jzero_value + 4}\nJNEG 3\nSUB 0\nJUMP {jump_end}', 5
+
+
+def load_registers_for_division():
+    return '\nSUB 0\nINC\nSTORE 9\nSTORE 2\nDEC\nSTORE 1\nSTORE 4\nSTORE 3', 8
+
+
+########################################################################################################################
+
+
+def p_expression_mod(p):
+    'expression : value MOD value'
+    p[0] = (p[1], 'MOD', p[3])
+    # a mod n = a - (n * a/n)
+
+
+########################################################################################################################
+
 # 29 condition -> value EQ value
 # 30 | value NEQ value
 # 31 | value LE value
@@ -493,6 +607,7 @@ def assign_value_to_variable(value, assigned=None):
     if value[0] == 'variable':
         # initialization_check(value[1], '0')
         # ZAKOMENTOWANE ZEBY PRZESZLO TESTY MGR.SLOWIKA ALE WYDAJE MI SIE ZE POWINNO BYC
+
         initialized_variables.add(assigned[1])
         return store_variable(value[1])
     elif value[0] == 'CONSTANT':
