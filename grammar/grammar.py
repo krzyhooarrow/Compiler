@@ -15,9 +15,6 @@ current_instruction = 0
 temp_vars = set()
 register_number = 1  # memory counter
 
-
-############# COMMANDS = tuple (string command, commands counter, temp vars if exists )
-
 ########################################################################################################################
 # Declaring 10 temporary registers
 
@@ -85,7 +82,6 @@ def p_commands_single(p):
 
 
 ########################################################################################################################
-
 # 12 command -> identifier ASSIGN expression ;
 # 13 | IF condition THEN commands ELSE commands ENDIF
 # 14 | IF condition THEN commands ENDIF
@@ -255,14 +251,10 @@ def p_expression_times(p):
             + PREPARE_FOR_MULTIPLICATION[0] + '\nLOAD 7' + \
             end_if_equals_0(LOOP_DIST)[0] + \
             load_least_significant_bit()[0] + \
-            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 5\nJZERO 3\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8\nLOAD 8'
+            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 5\nJZERO 5\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8\nLOAD 8'
 
             , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 9+negate_value_if_0()[1])
 
-
-###########
-
-# mnozenie sie buguje , pierwsza musi byc ujemna pamietac !
 ########################################################################################################################
 # powers are stored in 9
 # adds in 8
@@ -422,16 +414,43 @@ def load_registers_for_division():
 
 
 ########################################################################################################################
-
-
 def p_expression_mod(p):
     'expression : value MOD value'
-    p[0] = (p[1], 'MOD', p[3])
+    ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
+    ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
+
+    p[0] =  ASSIGMENT1[0] + f'\nSTORE 6' + \
+            ASSIGMENT2[0] + '\nSTORE 7\nSTORE 1' + check_if_divider_equals_0_or_1(5)[0] +\
+        check_sign_of_value()[0]+\
+        find_modulus()[0]\
+        ,50
     # a mod n = a - (n * a/n)
+############
+# storuje w 1 dzielnik zeby wiedziec jaki mial znak
+# potem wszystko robie na dodatnie
+############
+def check_if_divider_equals_0_or_1(end_distance):
+    return (f'\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nLOAD 7\nJUMP {end_distance}',9)
+    #### zwraca b jezeli jest w zakresie i skacze na koniec(-1,1)
+
+
+def find_modulus():
+    return (f'',3)
+
+########################################################################################################################
+#
+#
+#
+#
+#
+#
+
+
+
+
 
 
 ########################################################################################################################
-
 # 29 condition -> value EQ value
 # 30 | value NEQ value
 # 31 | value LE value
