@@ -429,24 +429,25 @@ def p_expression_mod(p):
         f'{change_sign_flag()[0]}' +\
         check_if_divider_equals_0_or_1(DISTANCE_TO_END+1)[0] +\
         check_sign_of_value()[0]+\
-        find_modulus()[0]+if_equals_0_end(change_modulo_if_flag_on()[1]+1)[0]+\
+        find_modulus()[0]+\
+        if_equals_0_end(change_modulo_if_flag_on()[1]+1)[0]+\
         change_modulo_if_flag_on()[0] +\
         check_returned_sign()[0] + \
         '\nLOAD 5'\
         ,\
-        3+DISTANCE_TO_END+check_if_divider_equals_0_or_1(1)[1]\
+        4+DISTANCE_TO_END+check_if_divider_equals_0_or_1(1)[1]\
         +ASSIGMENT2[1]+ASSIGMENT2[1]\
         + clear_sign_flag_and_set_power_to_0()[1]\
         +2*change_sign_flag()[1]
+        # nwm czy nie 6 albo 5
 
- 
 ########################################################################################################################
 
 def check_returned_sign():
     return f'\nLOAD 3\nJPOS 4\nSUB 0\nSUB 5\nSTORE 5',5
 
 def check_if_divider_equals_0_or_1(end_distance):
-    return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nLOAD 7\nJUMP {end_distance}',10)
+    return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nSUB 0\nJUMP {end_distance}',10)
     #### zwraca b jezeli jest w zakresie i skacze na koniec(-1,1)
 
 def update_value():
