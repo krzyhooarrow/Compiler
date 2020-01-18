@@ -419,7 +419,7 @@ def p_expression_mod(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    DISTANCE_TO_END = check_sign_of_value()[1]+find_modulus()[1]+change_modulo_if_flag_on()[1]+if_equals_0_end(1)[1]+2
+    DISTANCE_TO_END = check_returned_sign()[1]+check_sign_of_value()[1]+find_modulus()[1]+change_modulo_if_flag_on()[1]+if_equals_0_end(1)[1]+2
 
     p[0] = \
         f'{clear_sign_flag_and_set_power_to_0()[0]}'+ \
@@ -430,18 +430,20 @@ def p_expression_mod(p):
         check_if_divider_equals_0_or_1(DISTANCE_TO_END+1)[0] +\
         check_sign_of_value()[0]+\
         find_modulus()[0]+if_equals_0_end(change_modulo_if_flag_on()[1]+1)[0]+\
-        change_modulo_if_flag_on()[0] + '\nLOAD 5'\
-        ,3+DISTANCE_TO_END+check_if_divider_equals_0_or_1(1)[1]+ASSIGMENT2[1]+ASSIGMENT2[1]\
-        + clear_sign_flag_and_set_power_to_0()[1]+2*change_sign_flag()[1]
+        change_modulo_if_flag_on()[0] +\
+        check_returned_sign()[0] + \
+        '\nLOAD 5'\
+        ,\
+        3+DISTANCE_TO_END+check_if_divider_equals_0_or_1(1)[1]\
+        +ASSIGMENT2[1]+ASSIGMENT2[1]\
+        + clear_sign_flag_and_set_power_to_0()[1]\
+        +2*change_sign_flag()[1]
 
-    # change sign flah dla obu  takze potrzebne
+ 
+########################################################################################################################
 
-############
-# storuje w 1 dzielnik zeby wiedziec jaki mial znak
-# potem wszystko robie na dodatnie
-############
-# w 3 jest wartość 7
-
+def check_returned_sign():
+    return f'\nLOAD 3\nJPOS 4\nSUB 0\nSUB 5\nSTORE 5',5
 
 def check_if_divider_equals_0_or_1(end_distance):
     return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nLOAD 7\nJUMP {end_distance}',10)
@@ -476,12 +478,6 @@ def find_modulus():
 
 def reset_power():
     return (f'\nSUB 0\nSTORE 9', 2)
-########################################################################################################################
-#
-#
-#
-
-
 
 ########################################################################################################################
 # 29 condition -> value EQ value
