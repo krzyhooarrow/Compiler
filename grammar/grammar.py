@@ -410,8 +410,8 @@ def assert_bigger_value_division(jump_end, jzero_value):
 
 
 def load_registers_for_division():
-    return '\nSUB 0\nINC\nSTORE 9\nDEC\nSTORE 8\nSTORE 4\nSTORE 3', 7
-
+    return '\nSUB 0\nINC\nSTORE 9\nDEC\nSTORE 8\nSTORE 1\nSTORE 4\nSTORE 3', 8
+    ### czyszczenie flagi w mnozeniu
 
 ########################################################################################################################
 def p_expression_mod(p):
@@ -419,34 +419,67 @@ def p_expression_mod(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    p[0] =  ASSIGMENT1[0] + f'\nSTORE 6' + \
-            ASSIGMENT2[0] + '\nSTORE 7\nSTORE 1' + check_if_divider_equals_0_or_1(5)[0] +\
+    DISTANCE_TO_END = check_sign_of_value()[1]+find_modulus()[1]+change_modulo_if_flag_on()[1]+if_equals_0_end(1)[1]+2
+
+    p[0] = \
+        f'{clear_sign_flag_and_set_power_to_0()[0]}'+ \
+        ASSIGMENT1[0] + f'\nSTORE 6\nSTORE 5' \
+        +change_sign_flag()[0]+ \
+        ASSIGMENT2[0] + f'\nSTORE 7\nSTORE 3' \
+        f'{change_sign_flag()[0]}' +\
+        check_if_divider_equals_0_or_1(DISTANCE_TO_END+1)[0] +\
         check_sign_of_value()[0]+\
-        find_modulus()[0]\
-        ,50
-    # a mod n = a - (n * a/n)
+        find_modulus()[0]+if_equals_0_end(change_modulo_if_flag_on()[1]+1)[0]+\
+        change_modulo_if_flag_on()[0] + '\nLOAD 5'\
+        ,3+DISTANCE_TO_END+check_if_divider_equals_0_or_1(1)[1]+ASSIGMENT2[1]+ASSIGMENT2[1]\
+        + clear_sign_flag_and_set_power_to_0()[1]+2*change_sign_flag()[1]
+
+    # change sign flah dla obu  takze potrzebne
+
 ############
 # storuje w 1 dzielnik zeby wiedziec jaki mial znak
 # potem wszystko robie na dodatnie
 ############
+# w 3 jest wartość 7
+
+
 def check_if_divider_equals_0_or_1(end_distance):
-    return (f'\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nLOAD 7\nJUMP {end_distance}',9)
+    return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nLOAD 7\nJUMP {end_distance}',10)
     #### zwraca b jezeli jest w zakresie i skacze na koniec(-1,1)
+
+def update_value():
+    return (f'\nLOAD 7\nSHIFT 9\nSUB 5\nSTORE 5\nSUB 5\nSUB 5\nSTORE 5',7)
+
+
+def clear_sign_flag_and_set_power_to_0():
+    return f'\nLOAD 1\nSUB 0\nSTORE 1\nSTORE 9',4
+    ### wynik jest kurwa w 5
+def change_modulo_if_flag_on():       # skocz na koniec
+    return f'\nLOAD 1\nJZERO 7\nLOAD 7\nJPOS 11\nLOAD 5\nSUB 5\nSUB 5\nJUMP 6\nLOAD 7\nJPOS 3\nADD 5\nJUMP 2\nSUB 5\nSTORE 5',14
+    ## jak byly tych samych znakow to trzeba przemnozyc przez -1 jezeli 2 wartosc jest jneg. Dla roznych jest git wynik juz
+
+def if_equals_0_end(jump_dist):
+    return f'\nLOAD 5\nJZERO {jump_dist}',2
 
 
 def find_modulus():
-    return (f'',3)
+    WHOLE_DIST = 6+increase_power()[1]+decrease_power()[1]+update_value()[1]+reset_power()[1]
+    return (f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {2+increase_power()[1]}{increase_power()[0]}'
+            f'\nJUMP {-(increase_power()[1]+4)}'
+            f'{decrease_power()[0]}'
+            f'\nJNEG {update_value()[1]+reset_power()[1]+2}'
+            f'{update_value()[0]}'
+            f'{reset_power()[0]}'
+            f'\nJUMP {-WHOLE_DIST}'
+            ,WHOLE_DIST)
 
+
+def reset_power():
+    return (f'\nSUB 0\nSTORE 9', 2)
 ########################################################################################################################
 #
 #
 #
-#
-#
-#
-
-
-
 
 
 
