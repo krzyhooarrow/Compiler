@@ -1,8 +1,8 @@
 import os
+import re
 
 import ply.yacc as yacc
 from pip._vendor.distlib.compat import raw_input
-
 from lekser.lex import Lexer
 
 tokens = Lexer().tokens
@@ -14,6 +14,7 @@ initialized_variables = set()  # contains already initialized vars
 current_instruction = 0
 temp_vars = set()
 register_number = 1  # memory counter
+
 
 ########################################################################################################################
 # Declaring 10 temporary registers
@@ -101,7 +102,13 @@ def p_command_assign(p):
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
 
-    p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1, []
+    LOAD_INDEX = store_constant(("CONSTANT", variables[p[1][1]]))
+
+    if p[1][0] == 'variable' and len(p[1]) > 2:
+        p[0] = str(f'\nLOAD {variables[p[1][2]]}\nSTORE 6{LOAD_INDEX[0]}' +\
+                   f'\nADD 6\nSTORE 6{ASSIGMENT[0]}\nSTOREI 6'), ASSIGMENT[1] + LOAD_INDEX[1] + 5, []
+    else:
+        p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1, []
 
 
 def p_command_if_else(p):
@@ -251,11 +258,11 @@ def p_expression_times(p):
             + PREPARE_FOR_MULTIPLICATION[0] + '\nLOAD 7' + \
             end_if_equals_0(LOOP_DIST)[0] + \
             load_least_significant_bit()[0] + \
-            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[0] + f'\nJUMP -{LOOP_DIST}\nLOAD 5\nJZERO 5\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8\nLOAD 8'
+            check_if_LST_eq_0()[0] + add_subtotal_and_shift_by_2()[
+                0] + f'\nJUMP -{LOOP_DIST}\nLOAD 5\nJZERO 5\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8\nLOAD 8'
 
-            , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 9+negate_value_if_0()[1])
-
-
+            , PREPARE_FOR_MULTIPLICATION[1] + ASSIGMENT1[1] + ASSIGMENT2[1] + LOOP_DIST + end_if_equals_0(0)[1] + 9 +
+            negate_value_if_0()[1])
 
 
 ########################################################################################################################
@@ -269,7 +276,7 @@ def p_expression_times(p):
 # 2 contains 1 number
 # 1 value 0
 def negate_value_if_0():
-    return (f'\nJNEG 4\nSUB 0\nSTORE 5\nJUMP 7\nSUB 7\nSUB 7\nSTORE 7\nSUB 0\nINC\nSTORE 5',10)
+    return (f'\nJNEG 4\nSUB 0\nSTORE 5\nJUMP 7\nSUB 7\nSUB 7\nSTORE 7\nSUB 0\nINC\nSTORE 5', 10)
 
 
 def load_registers():
@@ -307,37 +314,35 @@ def p_expression_div(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    TOTAL_DISTANCE = make_floor_if_neg()[1]+change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
+    TOTAL_DISTANCE = make_floor_if_neg()[1] + change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
 
     LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END = TOTAL_DISTANCE + assert_bigger_value_division(1, 1)[1]
-    LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END = LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END + assert_0_division(1)[1] + check_sign_of_value()[1]+\
-        2*change_sign_flag()[1]+ASSIGMENT2[1]+1
-
+    LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END = LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END + assert_0_division(1)[1] + \
+                                            check_sign_of_value()[1] + \
+                                            2 * change_sign_flag()[1] + ASSIGMENT2[1] + 1
 
     p[0] = f'{load_registers_for_division()[0]}' + \
            ASSIGMENT1[0] + \
-           f'\nSTORE 6\nSTORE 5\nJZERO {LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END}'+ \
+           f'\nSTORE 6\nSTORE 5\nJZERO {LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END}' + \
            f'{change_sign_flag()[0]}' + \
            ASSIGMENT2[0] + f'\nSTORE 7' \
-           f'{change_sign_flag()[0]}' \
-           f'{check_sign_of_value()[0]}' + \
+                           f'{change_sign_flag()[0]}' \
+                           f'{check_sign_of_value()[0]}' + \
            assert_0_division(LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END)[0] + \
-           assert_bigger_value_division(TOTAL_DISTANCE, divide()[1]+1)[0] + \
-           \
-           \
+           assert_bigger_value_division(TOTAL_DISTANCE, divide()[1] + 1)[0] + \
+ \
            divide()[0] + \
-           \
+ \
            f'\nJUMP 4\nSUB 0\nINC\nSTORE 8' \
-           \
+ \
            f'{change_value_if_sign_flag_is_on()[0]}' \
            f'{make_floor_if_neg()[0]}' \
            f'\nLOAD 8' \
-        , ASSIGMENT2[1]+ASSIGMENT1[1]+2*change_sign_flag()[1]+9+\
-           check_sign_of_value()[1]+assert_0_division(0)[1]+\
-           assert_bigger_value_division(1,1)[1]+divide()[1]+\
-           change_value_if_sign_flag_is_on()[1]+load_registers_for_division()[1]+\
-            make_floor_if_neg()[1]
-
+        , ASSIGMENT2[1] + ASSIGMENT1[1] + 2 * change_sign_flag()[1] + 9 + \
+           check_sign_of_value()[1] + assert_0_division(0)[1] + \
+           assert_bigger_value_division(1, 1)[1] + divide()[1] + \
+           change_value_if_sign_flag_is_on()[1] + load_registers_for_division()[1] + \
+           make_floor_if_neg()[1]
 
 
 ########################################################################################################################
@@ -368,41 +373,47 @@ def change_value_if_sign_flag_is_on():
 
 def divide():
     return f'' \
-           f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {increase_power()[1]+2}' \
+           f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {increase_power()[1] + 2}' \
            f'{increase_power()[0]}' \
            f'\nJUMP {-(increase_power()[1] + 4)}' \
            f'{decrease_power()[0]}' \
            f'{update_temp_value()[0]}' \
-           f'{check_if_power_equals_1(0,add_power_to_sum()[1]+clear_power()[1]+2)[0]}' \
-            \
+           f'{check_if_power_equals_1(0, add_power_to_sum()[1] + clear_power()[1] + 2)[0]}' \
+ \
            f'{add_power_to_sum()[0]}' \
            f'{clear_power()[0]}' \
-           f'\nJUMP {-(check_if_power_equals_1(0,0)[1]+update_temp_value()[1]+increase_power()[1]+add_power_to_sum()[1]+clear_power()[1] +decrease_power()[1]+ 5)}' \
-           f'', 6 + increase_power()[1]+decrease_power()[1]+update_temp_value()[1]+check_if_power_equals_1(1,1)[1]\
-           +add_power_to_sum()[1]+clear_power()[1]
+           f'\nJUMP {-(check_if_power_equals_1(0, 0)[1] + update_temp_value()[1] + increase_power()[1] + add_power_to_sum()[1] + clear_power()[1] + decrease_power()[1] + 5)}' \
+           f'', 6 + increase_power()[1] + decrease_power()[1] + update_temp_value()[1] + check_if_power_equals_1(1, 1)[
+               1] \
+           + add_power_to_sum()[1] + clear_power()[1]
 
 
-def check_if_power_equals_1(cond_dist,end_dist):
-    return (f'\nJPOS {cond_dist+4}\nJZERO {cond_dist+3}\nLOAD 9\nJZERO {end_dist}',4)
+def check_if_power_equals_1(cond_dist, end_dist):
+    return (f'\nJPOS {cond_dist + 4}\nJZERO {cond_dist + 3}\nLOAD 9\nJZERO {end_dist}', 4)
+
 
 def make_floor_if_neg():
-    return ('\nLOAD 5\nADD 7\nJZERO 7\nLOAD 1\nJPOS 5\nJNEG 4\nLOAD 8\nDEC\nSTORE 8',9)
+    return ('\nLOAD 5\nADD 7\nJZERO 7\nLOAD 1\nJPOS 5\nJNEG 4\nLOAD 8\nDEC\nSTORE 8', 9)
 
 
 def decrease_power():
     return ('\nLOAD 9\nDEC\nSTORE 9', 3)
 
+
 def update_temp_value():
-    return ('\nLOAD 7\nSHIFT 9\nSUB 5\nSTORE 3\nSUB 3\nSUB 3\nSTORE 5',7)
+    return ('\nLOAD 7\nSHIFT 9\nSUB 5\nSTORE 3\nSUB 3\nSUB 3\nSTORE 5', 7)
+
 
 def add_power_to_sum():
-    return (f'\nSUB 0\nINC\nSHIFT 9\nADD 8\nSTORE 8',5)
+    return (f'\nSUB 0\nINC\nSHIFT 9\nADD 8\nSTORE 8', 5)
+
 
 def check_if_equals(end_dist):
-    return (f'\nLOAD 5\nJZERO {end_dist}',2)
+    return (f'\nLOAD 5\nJZERO {end_dist}', 2)
+
 
 def clear_power():
-    return (f'\nSUB 0\nINC\nSTORE 9',3)
+    return (f'\nSUB 0\nINC\nSTORE 9', 3)
 
 
 def assert_0_division(jump_end):
@@ -417,71 +428,80 @@ def load_registers_for_division():
     return '\nSUB 0\nINC\nSTORE 9\nDEC\nSTORE 8\nSTORE 1\nSTORE 4\nSTORE 3', 8
     ### czyszczenie flagi w mnozeniu
 
+
 ########################################################################################################################
 def p_expression_mod(p):
     'expression : value MOD value'
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    DISTANCE_TO_END = check_returned_sign()[1]+check_sign_of_value()[1]+find_modulus()[1]+change_modulo_if_flag_on()[1]+if_equals_0_end(1)[1]+2
+    DISTANCE_TO_END = check_returned_sign()[1] + check_sign_of_value()[1] + find_modulus()[1] + \
+                      change_modulo_if_flag_on()[1] + if_equals_0_end(1)[1] + 2
 
     p[0] = \
-        f'{clear_sign_flag_and_set_power_to_0()[0]}'+ \
+        f'{clear_sign_flag_and_set_power_to_0()[0]}' + \
         ASSIGMENT1[0] + f'\nSTORE 6\nSTORE 5' \
-        +change_sign_flag()[0]+ \
+        + change_sign_flag()[0] + \
         ASSIGMENT2[0] + f'\nSTORE 7\nSTORE 3' \
-        f'{change_sign_flag()[0]}' +\
-        check_if_divider_equals_0_or_1(DISTANCE_TO_END+1)[0] +\
-        check_sign_of_value()[0]+\
-        find_modulus()[0]+\
-        if_equals_0_end(change_modulo_if_flag_on()[1]+1)[0]+\
-        change_modulo_if_flag_on()[0] +\
+                        f'{change_sign_flag()[0]}' + \
+        check_if_divider_equals_0_or_1(DISTANCE_TO_END + 1)[0] + \
+        check_sign_of_value()[0] + \
+        find_modulus()[0] + \
+        if_equals_0_end(change_modulo_if_flag_on()[1] + 1)[0] + \
+        change_modulo_if_flag_on()[0] + \
         check_returned_sign()[0] + \
-        '\nLOAD 5'\
-        ,\
-        clear_sign_flag_and_set_power_to_0()[1]+ASSIGMENT1[1]+2+change_sign_flag()[1]*2+\
-        ASSIGMENT2[1]+2+check_if_divider_equals_0_or_1(1)[1]+check_sign_of_value()[1]+\
-        find_modulus()[1]+if_equals_0_end(0)[1]+change_modulo_if_flag_on()[1]+check_returned_sign()[1]+1
+        '\nLOAD 5' \
+            , \
+        clear_sign_flag_and_set_power_to_0()[1] + ASSIGMENT1[1] + 2 + change_sign_flag()[1] * 2 + \
+        ASSIGMENT2[1] + 2 + check_if_divider_equals_0_or_1(1)[1] + check_sign_of_value()[1] + \
+        find_modulus()[1] + if_equals_0_end(0)[1] + change_modulo_if_flag_on()[1] + check_returned_sign()[1] + 1
+
 
 ########################################################################################################################
 
 def check_returned_sign():
-    return f'\nLOAD 3\nJPOS 4\nSUB 0\nSUB 5\nSTORE 5',5
+    return f'\nLOAD 3\nJPOS 4\nSUB 0\nSUB 5\nSTORE 5', 5
+
 
 def check_if_divider_equals_0_or_1(end_distance):
-    return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nSUB 0\nJUMP {end_distance}',10)
+    return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nSUB 0\nJUMP {end_distance}', 10)
     #### zwraca b jezeli jest w zakresie i skacze na koniec(-1,1)
 
+
 def update_value():
-    return (f'\nLOAD 7\nSHIFT 9\nSUB 5\nSTORE 5\nSUB 5\nSUB 5\nSTORE 5',7)
+    return (f'\nLOAD 7\nSHIFT 9\nSUB 5\nSTORE 5\nSUB 5\nSUB 5\nSTORE 5', 7)
 
 
 def clear_sign_flag_and_set_power_to_0():
-    return f'\nLOAD 1\nSUB 0\nSTORE 1\nSTORE 9',4
+    return f'\nLOAD 1\nSUB 0\nSTORE 1\nSTORE 9', 4
     ### wynik jest kurwa w 5
-def change_modulo_if_flag_on():       # skocz na koniec
-    return f'\nLOAD 1\nJZERO 7\nLOAD 7\nJPOS 11\nLOAD 5\nSUB 5\nSUB 5\nJUMP 6\nLOAD 7\nJPOS 3\nADD 5\nJUMP 2\nSUB 5\nSTORE 5',14
+
+
+def change_modulo_if_flag_on():  # skocz na koniec
+    return f'\nLOAD 1\nJZERO 7\nLOAD 7\nJPOS 11\nLOAD 5\nSUB 5\nSUB 5\nJUMP 6\nLOAD 7\nJPOS 3\nADD 5\nJUMP 2\nSUB 5\nSTORE 5', 14
     ## jak byly tych samych znakow to trzeba przemnozyc przez -1 jezeli 2 wartosc jest jneg. Dla roznych jest git wynik juz
 
+
 def if_equals_0_end(jump_dist):
-    return f'\nLOAD 5\nJZERO {jump_dist}',2
+    return f'\nLOAD 5\nJZERO {jump_dist}', 2
 
 
 def find_modulus():
-    WHOLE_DIST = 6+increase_power()[1]+decrease_power()[1]+update_value()[1]+reset_power()[1]
-    return (f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {2+increase_power()[1]}{increase_power()[0]}'
-            f'\nJUMP {-(increase_power()[1]+4)}'
+    WHOLE_DIST = 6 + increase_power()[1] + decrease_power()[1] + update_value()[1] + reset_power()[1]
+    return (f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {2 + increase_power()[1]}{increase_power()[0]}'
+            f'\nJUMP {-(increase_power()[1] + 4)}'
             f'{decrease_power()[0]}'
-            f'\nJNEG {update_value()[1]+reset_power()[1]+2}'
+            f'\nJNEG {update_value()[1] + reset_power()[1] + 2}'
             f'{update_value()[0]}'
             f'{reset_power()[0]}'
             f'\nJUMP {-WHOLE_DIST}'
             ,
-            7+increase_power()[1]+decrease_power()[1]+update_value()[1]+reset_power()[1])
+            7 + increase_power()[1] + decrease_power()[1] + update_value()[1] + reset_power()[1])
 
 
 def reset_power():
     return (f'\nSUB 0\nSTORE 9', 2)
+
 
 ########################################################################################################################
 # 29 condition -> value EQ value
@@ -578,13 +598,13 @@ def p_identifier_pidentifier(p):
 
 def p_identifier_pidentifier_pidentifier(p):
     'identifier : pidentifier LEFT_BRACKET pidentifier RIGHT_BRACKET'
-    # p[0] = (p[1], 'LEFT_BRACKET', p[3], 'RIGHT_BRACKET')
-    p[0] = ("array", p[1], ("variable", p[3]))
+    ARRAY_STARTING_INDEX = arrays[p[1]][0]
+    p[0] = ("variable", p[1]+str(ARRAY_STARTING_INDEX), p[3])
 
 
 def p_identifier_pidentifier_num(p):
     'identifier : pidentifier LEFT_BRACKET NUM RIGHT_BRACKET'
-    p[0] = ("array", p[1], ("CONSTANT", p[3]))
+    p[0] = ("variable", p[1] + str(p[3]))
 
 
 ########################################################################################################################
@@ -625,11 +645,10 @@ def loop_iterator_check(id, lineno):
 # Function creates new variable and stores its address in dict variables.
 def new_variable(var_name, line_number):
     global register_number
-    if var_name in variables:
+    if var_name in variables :
         raise Exception("Duplicated variable name at line: " + line_number)
     else:
         variables[var_name] = register_number
-        # initialized_variables.add(var_name)
         register_number += 1
 
 
@@ -645,10 +664,15 @@ def new_array(array_name, begin, end, line_number):
         raise Exception('Error in array range')
     if array_name in arrays:
         raise Exception("Duplicated array name at line: " + line_number)
+    if array_name in variables:
+        raise Exception("Duplicated array name at line: " + line_number)
     else:
-        arrays[array_name] = [register_number, begin, end]
-        # initialized_variables.add(array_name)      # initialized_variables.add(array_name)
-        register_number += begin - end + 1
+        arrays[array_name] = begin, end
+        for dist in range(begin, end + 1):
+            variables[array_name + str(dist)] = register_number
+            register_number += 1
+
+
 
 
 def create_temporary_registers(length):
@@ -662,7 +686,12 @@ def create_temporary_registers(length):
 
 # returns string, cost of operations
 def assign_value_to_variable(value, assigned=None):
-    if value[0] == 'variable':
+    if value[0] == 'variable' and len(value) > 2:
+
+        LOAD_ARRAY = store_constant(("CONSTANT", variables[value[1]]))
+        return f'\nLOAD {variables[value[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOADI 6', 5+LOAD_ARRAY[1]
+
+    elif value[0] == 'variable':
         # initialization_check(value[1], '0')
         # ZAKOMENTOWANE ZEBY PRZESZLO TESTY MGR.SLOWIKA ALE WYDAJE MI SIE ZE POWINNO BYC
 
@@ -671,11 +700,6 @@ def assign_value_to_variable(value, assigned=None):
     elif value[0] == 'CONSTANT':
         initialized_variables.add(assigned[1])
         return store_constant(value)
-    elif value[0] == 'array':
-        # if id[2][0] == 'CONSTANT':
-        #     return arrays[id[1]][0] + id[2][1] - arrays[id[1]][1]
-        # if id[2][0] == 'variable':
-        pass  # to be done
     else:
         return value
 
@@ -747,9 +771,9 @@ except Exception as e:
 fw = open(output, "w")
 # print(f'{parsed}')
 # print(parsed.strip())
-print(variables)
+# print(variables)
 # print(arrays)
-print(initialized_variables)
+# print(initialized_variables)
 # print(temporary_variables)
 # fw.write(f'{parsed.strip()}')
 fw.write(PROGRAM)
