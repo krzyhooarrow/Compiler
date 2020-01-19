@@ -304,7 +304,8 @@ def p_expression_div(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    TOTAL_DISTANCE = make_floor_if_neg()[1]+change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
+    TOTAL_DISTANCE = make_floor_if_neg()[1]+change_value_if_sign_flag_is_on()[1] + divide()[1] + 6
+        # zamiast + 2
 
     LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END = TOTAL_DISTANCE + assert_bigger_value_division(1, 1)[1]
     LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END = LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END + assert_0_division(1)[1] + check_sign_of_value()[1]+\
