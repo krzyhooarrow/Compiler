@@ -304,21 +304,13 @@ def p_expression_div(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    TOTAL_DISTANCE = change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
+    TOTAL_DISTANCE = make_floor_if_neg()[1]+change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
 
     LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END = TOTAL_DISTANCE + assert_bigger_value_division(1, 1)[1]
     LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END = LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END + assert_0_division(1)[1] + check_sign_of_value()[1]+\
         2*change_sign_flag()[1]+ASSIGMENT2[1]+1
 
-    # ładujemy rejestry wszystkie i ich wartości
-    # liczba pierwsza jest umieszczana w r6 i r5
-    # zmiana w fladze dla każdej z liczb
-    # przemnożenie obu liczb na dodatnie dla łatwosci operacji
-    # sprawdzamy czy nie dzielimy przez 0. Jak tak to skok na koniec
-    # sprawdzamy czy nie dzielimy przez liczbę wiekszą bądź równą sobie
-    # przystępujemy do dzielenia
-    # ładujemy 2 i storujemy w 4 (miejsce gdy liczby są sobie równe)
-    # zwracamy rejestr 4 przechowujący wynik dzielenia
+
     p[0] = f'{load_registers_for_division()[0]}' + \
            ASSIGMENT1[0] + \
            f'\nSTORE 6\nSTORE 5\nJZERO {LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END}'+ \
@@ -335,9 +327,12 @@ def p_expression_div(p):
            f'\nJUMP 4\nSUB 0\nINC\nSTORE 8' \
            \
            f'{change_value_if_sign_flag_is_on()[0]}' \
+           f'{make_floor_if_neg()[0]}' \
            f'\nLOAD 8' \
         , ASSIGMENT2[1]+ASSIGMENT1[1]+2*change_sign_flag()[1]+9+\
-           check_sign_of_value()[1]+assert_0_division(0)[1]+assert_bigger_value_division(1,1)[1]+divide()[1]+change_value_if_sign_flag_is_on()[1]+load_registers_for_division()[1]
+           check_sign_of_value()[1]+assert_0_division(0)[1]+assert_bigger_value_division(1,1)[1]\
+           +divide()[1]+change_value_if_sign_flag_is_on()[1]+\
+           load_registers_for_division()[1] + make_floor_if_neg()[1]
 
 ########################################################################################################################
 # w 1 flaga znaku = 0 gdy są tego samego znaku
@@ -381,9 +376,12 @@ def divide():
            +add_power_to_sum()[1]+clear_power()[1]
 
 
-# f'{check_if_equals(add_power_to_sum()[1]+clear_power()[1]+2)[0]}' \ przed add power
 def check_if_power_equals_1(cond_dist,end_dist):
     return (f'\nJPOS {cond_dist+4}\nJZERO {cond_dist+3}\nLOAD 9\nJZERO {end_dist}',4)
+
+def make_floor_if_neg():
+    return ('\nLOAD 5\nADD 7\nJZERO 7\nLOAD 1\nJPOS 5\nJNEG 4\nLOAD 8\nDEC\nSTORE 8',9)
+
 
 def decrease_power():
     return ('\nLOAD 9\nDEC\nSTORE 9', 3)
@@ -439,7 +437,7 @@ def p_expression_mod(p):
         +ASSIGMENT2[1]+ASSIGMENT2[1]\
         + clear_sign_flag_and_set_power_to_0()[1]\
         +2*change_sign_flag()[1]
-        # nwm czy nie 6 albo 5
+
 
 ########################################################################################################################
 
