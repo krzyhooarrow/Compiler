@@ -679,8 +679,6 @@ def new_temp_variable():
     return variable
 
 
-
-
 ########################################################################################################################
 
 
@@ -707,8 +705,6 @@ def assign_value_to_variable(value, assigned=None):
                    f'\nADD {get_addres_from_variable(temp_variable)}' \
                    f'\nSTORE {get_addres_from_variable(temp_variable)}' \
                    f'\nLOADI {get_addres_from_variable(temp_variable)}', 7 + LOAD_ARRAY[1] + LOAD_ARRAY_BEGIN[1]
-                # tu trzeba wyliczyc prawdziwy indeks a - minimum + poczatek
-                # teraz jest tylko minimum + a
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(value[1],value[2])))
             return f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}',2+LOAD_ARRAY[1]
@@ -743,7 +739,6 @@ def store_constant(value):
         sign = False
     counter += 1
     binary_value = str(bin(abs(value)))[2:]
-
     for k in range(len(binary_value)):
         STORE += '\nADD 0'
         counter += 1
@@ -791,8 +786,6 @@ def store_variable_or_array(variable):
                    f'\nLOAD {get_addres_from_variable(temp_variable_for_storage)}' \
                    f'\nSTOREI {get_addres_from_variable(temp_variable)}', 4 + LOAD_ARRAY[1]
 
-#### trzeba bedzie storowac w temp rejestrach.
-
 #######################################################################################################################
 
 
@@ -833,4 +826,3 @@ print(arrays)
 fw.write(PROGRAM)
 
 #       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output2.txt
-
