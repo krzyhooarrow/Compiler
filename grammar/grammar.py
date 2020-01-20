@@ -101,14 +101,8 @@ def p_command_assign(p):
     variable_check(p[1][1], '0')
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
-
-    LOAD_INDEX = store_constant(("CONSTANT", variables[p[1][1]]))
-
-    if p[1][0] == 'variable' and len(p[1]) > 2:
-        p[0] = str(f'\nLOAD {variables[p[1][2]]}\nSTORE 6{LOAD_INDEX[0]}' +\
-                   f'\nADD 6\nSTORE 6{ASSIGMENT[0]}\nSTOREI 6'), ASSIGMENT[1] + LOAD_INDEX[1] + 5, []
-    else:
-        p[0] = str(ASSIGMENT[0]) + f'\nSTORE {variables[p[1][1]]}', ASSIGMENT[1] + 1, []
+    STORE = store_variable_or_array(p[1])
+    p[0] = str(ASSIGMENT[0]) + f'{STORE[0]}', ASSIGMENT[1] + STORE[1],[]
 
 
 def p_command_if_else(p):
@@ -203,7 +197,7 @@ def p_command_read(p):
     'command : READ identifier SEMICOLON'
     variable_check(p[2][1], '0')
     initialized_variables.add(p[2][1])
-    p[0] = f'\nGET\nSTORE {variables[p[2][1]]}', 2, []
+    p[0] = f'\nGET{store_variable_or_array(p[2])[0]}', 1+store_variable_or_array((p[2]))[1], []
 
 
 def p_command_write(p):
@@ -346,7 +340,7 @@ def p_expression_div(p):
 
 
 ########################################################################################################################
-# w 1 flaga znaku = 0 gdy są tego samego znaku
+# w 1 flaga znaku = 0 gdy są tego samego znaku
 # w 6 liczba 1  --- liczba dzielona  dzielimy 6 : 7
 # w 7 liczba 2  --- liczba wieksza
 # w 8 temp value (lacznie)
@@ -598,13 +592,13 @@ def p_identifier_pidentifier(p):
 
 def p_identifier_pidentifier_pidentifier(p):
     'identifier : pidentifier LEFT_BRACKET pidentifier RIGHT_BRACKET'
-    ARRAY_STARTING_INDEX = arrays[p[1]][0]
-    p[0] = ("variable", p[1]+str(ARRAY_STARTING_INDEX), p[3])
+    p[0] = ("array", p[1],p[3])
+
 
 
 def p_identifier_pidentifier_num(p):
     'identifier : pidentifier LEFT_BRACKET NUM RIGHT_BRACKET'
-    p[0] = ("variable", p[1] + str(p[3]))
+    p[0] = ("array", p[1],p[3])
 
 
 ########################################################################################################################
@@ -621,7 +615,7 @@ def array_check(id, lineno):
 
 
 def variable_check(id, lineno):
-    if id not in variables:
+    if id not in variables and id not in  arrays:
         if id in arrays:
             raise Exception("Error at:  " + lineno + ': ' + id)
         else:
@@ -645,7 +639,7 @@ def loop_iterator_check(id, lineno):
 # Function creates new variable and stores its address in dict variables.
 def new_variable(var_name, line_number):
     global register_number
-    if var_name in variables :
+    if var_name in variables:
         raise Exception("Duplicated variable name at line: " + line_number)
     else:
         variables[var_name] = register_number
@@ -667,12 +661,8 @@ def new_array(array_name, begin, end, line_number):
     if array_name in variables:
         raise Exception("Duplicated array name at line: " + line_number)
     else:
-        arrays[array_name] = begin, end
-        for dist in range(begin, end + 1):
-            variables[array_name + str(dist)] = register_number
-            register_number += 1
-
-
+        arrays[array_name] = begin, end,register_number
+        register_number += end-begin+1
 
 
 def create_temporary_registers(length):
@@ -686,12 +676,7 @@ def create_temporary_registers(length):
 
 # returns string, cost of operations
 def assign_value_to_variable(value, assigned=None):
-    if value[0] == 'variable' and len(value) > 2:
-
-        LOAD_ARRAY = store_constant(("CONSTANT", variables[value[1]]))
-        return f'\nLOAD {variables[value[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOADI 6', 5+LOAD_ARRAY[1]
-
-    elif value[0] == 'variable':
+    if value[0] == 'variable':
         # initialization_check(value[1], '0')
         # ZAKOMENTOWANE ZEBY PRZESZLO TESTY MGR.SLOWIKA ALE WYDAJE MI SIE ZE POWINNO BYC
 
@@ -700,8 +685,30 @@ def assign_value_to_variable(value, assigned=None):
     elif value[0] == 'CONSTANT':
         initialized_variables.add(assigned[1])
         return store_constant(value)
+    elif value[0] == 'array':
+        if type(value[2]) == type(''):
+            LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(value)))
+            # return f'{LOAD_ARRAY[0]}\nSTORE 6\nLOADI 6', 2 + LOAD_ARRAY[1]
+            return f'\nLOAD {variables[value[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOADI 6', 5 + LOAD_ARRAY[1]
+        else:
+            LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(value[1],value[2])))
+            return f'{LOAD_ARRAY[0]}\nSTORE 6\nLOADI 6',2+LOAD_ARRAY[1]
+            # return f'\nLOAD {variables[value[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOADI 6', 5 + LOAD_ARRAY[1]
     else:
         return value
+
+
+def get_addres_from_variable(variable):
+    if variable[0] == 'variable':
+        return variables[variable[1]]
+    else:
+        return arrays[variable[1]]
+
+
+def get_index_in_array(array_name,index):
+    array = arrays[array_name]
+    return index -array[0]+array[2]
+
 
 
 def store_variable(variable):
@@ -738,6 +745,21 @@ def get_nested_variables(used_variables, nested_variables):
         return nested_variables[2]
     return VARIABLES
 
+
+
+def store_variable_or_array(variable):
+    if variable[0] == 'variable':
+        return f'\nSTORE {get_addres_from_variable(variable)}',1
+    else:
+        if type(variable[2]) == type(''):
+            LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(variable)))
+            # return f'{LOAD_ARRAY[0]}\nSTORE 6\nLOADI 6', 2 + LOAD_ARRAY[1]
+            return f'\nSTORE 5\nLOAD {variables[variable[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOAD 5\nSTOREI 6',7 + LOAD_ARRAY[1]
+        else:
+            LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(variable[1], variable[2])))
+            return f'\nSTORE 5{LOAD_ARRAY[0]}\nSTORE 6\nLOAD 5\nSTOREI 6', 4 + LOAD_ARRAY[1]
+
+#### trzeba bedzie storowac w temp rejestrach.
 
 #######################################################################################################################
 
