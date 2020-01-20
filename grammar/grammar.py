@@ -139,13 +139,17 @@ def p_command_from_upto(p):
 
     p[2] = ('variable', p[2])
 
-    STORE_FROM = assign_value_to_variable(p[4], p[2])
+    temp_var = new_temp_variable()
 
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[1] + 1
+    STORE_FROM = assign_value_to_variable(p[4], p[2])
+    STORE_TO = assign_value_to_variable(p[6], temp_var)
+
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' +\
+                     str(STORE_TO[0])+  f'\nSTORE {variables[temp_var[1]]}', STORE_FROM[1]+STORE_TO[1] + 2
 
     ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}', 3
 
-    LOOP_CONDITION_CHECK = p_condition_greater(['', p[2], 'GE', p[6]])
+    LOOP_CONDITION_CHECK = p_condition_greater(['', p[2], 'GE', temp_var])
 
     JUMP_DISTANCE = -(ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] + p[8][1] + 1)
 
@@ -171,14 +175,20 @@ def p_command_from_downto(p):
 
     p[2] = ('variable', p[2])
 
+    temp_var = new_temp_variable()
+
     STORE_FROM = assign_value_to_variable(p[4], p[2])
+    STORE_TO = assign_value_to_variable(p[6], temp_var)
 
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[
-        1] + 1
+    # LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[
+    #     1] + 1
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + \
+                     str(STORE_TO[0]) + f'\nSTORE {variables[temp_var[1]]}', STORE_FROM[1] + STORE_TO[1] + 2
 
+    f'temp{register_number}'
     ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nDEC\nSTORE {variables[p[2][1]]}', 3
 
-    LOOP_CONDITION_CHECK = p_condition_less(['', p[2], 'LE', p[6]])
+    LOOP_CONDITION_CHECK = p_condition_less(['', p[2], 'LE', temp_var])
 
     JUMP_DISTANCE = -(ITERATOR_INCREMENTATION[1] + LOOP_CONDITION_CHECK[1] + p[8][1] + 1)
 
@@ -309,7 +319,7 @@ def p_expression_div(p):
     ASSIGMENT1 = assign_value_to_variable(p[1], p[1])
     ASSIGMENT2 = assign_value_to_variable(p[3], p[3])
 
-    TOTAL_DISTANCE = make_floor_if_neg()[1] + change_value_if_sign_flag_is_on()[1] + divide()[1] + 2
+    TOTAL_DISTANCE = make_floor_if_neg()[1] + change_value_if_sign_flag_is_on()[1] + divide()[1] + 4
 
     LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END = TOTAL_DISTANCE + assert_bigger_value_division(1, 1)[1]
     LOOP_DISTANCE_FROM_ASSIGMENT_1_TO_END = LOOP_DISTANCE_FROM_ASSIGMENT_2_TO_END + assert_0_division(1)[1] + \
@@ -388,7 +398,7 @@ def check_if_power_equals_1(cond_dist, end_dist):
 
 
 def make_floor_if_neg():
-    return ('\nLOAD 5\nADD 7\nJZERO 7\nLOAD 1\nJPOS 5\nJNEG 4\nLOAD 8\nDEC\nSTORE 8', 9)
+    return ('\nLOAD 5\nSUB 7\nJZERO 7\nLOAD 1\nJPOS 5\nJNEG 4\nLOAD 8\nDEC\nSTORE 8', 9)
 
 
 def decrease_power():
@@ -672,6 +682,17 @@ def create_temporary_registers(length):
         initialized_variables.add(f'r{k}')
 
 
+def new_temp_variable():
+    global register_number
+    variable = ('variable',f'temp{register_number}')
+    new_variable(variable[1], 0)
+    initialized_variables.add(variable[1])
+    register_number+=1
+    return variable
+
+
+
+
 ########################################################################################################################
 
 
@@ -687,14 +708,14 @@ def assign_value_to_variable(value, assigned=None):
         initialized_variables.add(assigned[1])
         return store_constant(value)
     elif value[0] == 'array':
+        temp_variable = new_temp_variable()
         if type(value[2]) == type(''):
             LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(value)))
-            # return f'{LOAD_ARRAY[0]}\nSTORE 6\nLOADI 6', 2 + LOAD_ARRAY[1]
-            return f'\nLOAD {variables[value[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOADI 6', 5 + LOAD_ARRAY[1]
+            return f'\nLOAD {variables[value[2]]}\nSTORE {get_addres_from_variable(temp_variable)}{LOAD_ARRAY[0]}\nADD {get_addres_from_variable(temp_variable)}' \
+                   f'\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}', 5 + LOAD_ARRAY[1]
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(value[1],value[2])))
-            return f'{LOAD_ARRAY[0]}\nSTORE 6\nLOADI 6',2+LOAD_ARRAY[1]
-            # return f'\nLOAD {variables[value[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOADI 6', 5 + LOAD_ARRAY[1]
+            return f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}',2+LOAD_ARRAY[1]
     else:
         return value
 
@@ -752,12 +773,22 @@ def store_variable_or_array(variable):
     if variable[0] == 'variable':
         return f'\nSTORE {get_addres_from_variable(variable)}',1
     else:
+        temp_variable = new_temp_variable()
+        temp_variable_for_storage = new_temp_variable()
+
         if type(variable[2]) == type(''):
             LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(variable)))
-            return f'\nSTORE 5\nLOAD {variables[variable[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOAD 5\nSTOREI 6',7 + LOAD_ARRAY[1]
+            return f'\nSTORE {get_addres_from_variable(temp_variable_for_storage)}\nLOAD {variables[variable[2]]}' \
+                   f'\nSTORE {get_addres_from_variable(temp_variable)}{LOAD_ARRAY[0]}' \
+                   f'\nADD {get_addres_from_variable(temp_variable)}\nSTORE {get_addres_from_variable(temp_variable)}' \
+                   f'\nLOAD {get_addres_from_variable(temp_variable_for_storage)}' \
+                   f'\nSTOREI {get_addres_from_variable(temp_variable)}',7 + LOAD_ARRAY[1]
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(variable[1], variable[2])))
-            return f'\nSTORE 5{LOAD_ARRAY[0]}\nSTORE 6\nLOAD 5\nSTOREI 6', 4 + LOAD_ARRAY[1]
+            return f'\nSTORE {get_addres_from_variable(temp_variable_for_storage)}' \
+                   f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}' \
+                   f'\nLOAD {get_addres_from_variable(temp_variable_for_storage)}' \
+                   f'\nSTOREI {get_addres_from_variable(temp_variable)}', 4 + LOAD_ARRAY[1]
 
 #### trzeba bedzie storowac w temp rejestrach.
 
