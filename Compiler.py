@@ -96,11 +96,13 @@ def p_commands_single(p):
 def p_command_assign(p):
     'command : identifier ASSIGN expression SEMICOLON'
 
-    variable_check(p[1][1], '0')
+    variable_check(p[1], '0')
+    initialization_check(p[3], '0')
+
     initialized_variables.add(p[1][1])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
     STORE = store_variable_or_array(p[1])
-    p[0] = str(ASSIGMENT[0]) + f'{STORE[0]}', ASSIGMENT[1] + STORE[1],[]
+    p[0] = str(ASSIGMENT[0]) + f'{STORE[0]}', ASSIGMENT[1] + STORE[1], []
 
 
 def p_command_if_else(p):
@@ -140,8 +142,8 @@ def p_command_from_upto(p):
     STORE_FROM = assign_value_to_variable(p[4], p[2])
     STORE_TO = assign_value_to_variable(p[6], temp_var)
 
-    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' +\
-                     str(STORE_TO[0])+  f'\nSTORE {variables[temp_var[1]]}', STORE_FROM[1]+STORE_TO[1] + 2
+    LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + \
+                     str(STORE_TO[0]) + f'\nSTORE {variables[temp_var[1]]}', STORE_FROM[1] + STORE_TO[1] + 2
 
     ITERATOR_INCREMENTATION = f'\nLOAD {variables[p[2][1]]}\nINC\nSTORE {variables[p[2][1]]}', 3
 
@@ -200,13 +202,15 @@ def p_command_from_downto(p):
 
 def p_command_read(p):
     'command : READ identifier SEMICOLON'
-    variable_check(p[2][1], '0')
+    variable_check(p[2], '0')
     initialized_variables.add(p[2][1])
-    p[0] = f'\nGET{store_variable_or_array(p[2])[0]}', 1+store_variable_or_array((p[2]))[1], []
+    p[0] = f'\nGET{store_variable_or_array(p[2])[0]}', 1 + store_variable_or_array((p[2]))[1], []
 
 
 def p_command_write(p):
     'command : WRITE value SEMICOLON'
+    variable_check(p[2], '0')
+    initialization_check(p[2], '0')
     ASSIGMENT = assign_value_to_variable(p[2], p[2])
     p[0] = ASSIGMENT[0] + '\nPUT', ASSIGMENT[1] + 1, []
 
@@ -369,7 +373,6 @@ def change_value_if_sign_flag_is_on():
     return (f'\nLOAD 1\nJPOS 6\nJNEG 5\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8', 7)
 
 
-
 def divide():
     return f'' \
            f'\nLOAD 7\nSHIFT 9\nSUB 5\nJPOS {increase_power()[1] + 2}' \
@@ -425,7 +428,6 @@ def assert_bigger_value_division(jump_end, jzero_value):
 
 def load_registers_for_division():
     return '\nSUB 0\nINC\nSTORE 9\nDEC\nSTORE 8\nSTORE 1\nSTORE 4\nSTORE 3', 8
-
 
 
 ########################################################################################################################
@@ -497,6 +499,7 @@ def find_modulus():
 
 def reset_power():
     return (f'\nSUB 0\nSTORE 9', 2)
+
 
 ########################################################################################################################
 # 29 condition -> value EQ value
@@ -593,13 +596,12 @@ def p_identifier_pidentifier(p):
 
 def p_identifier_pidentifier_pidentifier(p):
     'identifier : pidentifier LEFT_BRACKET pidentifier RIGHT_BRACKET'
-    p[0] = ("array", p[1],p[3])
-
+    p[0] = ("array", p[1], p[3])
 
 
 def p_identifier_pidentifier_num(p):
     'identifier : pidentifier LEFT_BRACKET NUM RIGHT_BRACKET'
-    p[0] = ("array", p[1],p[3])
+    p[0] = ("array", p[1], p[3])
 
 
 ########################################################################################################################
@@ -607,27 +609,36 @@ def p_error(p):
     print("Syntax error in input!")
 
 
-def array_check(id, lineno):
-    if id not in arrays:
-        if id in variables:
-            raise Exception("Error at line " + lineno + ': ' + id)
-        else:
-            raise Exception("Error at line  " + lineno + ': ' + id)
+# def array_check(id, lineno):
+#     if id not in arrays:
+#         if id in variables:
+#             raise Exception("Error at line " + lineno + ': ' + id)
+#         else:
+#             raise Exception("Error at line  " + lineno + ': ' + id)
 
 
 def variable_check(id, lineno):
-    if id not in variables and id not in  arrays:
-        if id in arrays:
-            raise Exception("Error at:  " + lineno + ': ' + id)
-        else:
-            raise Exception("Error at:  " + lineno + ': variable not declared: ' + str(id))
+    if id[0] == 'variable':
+        if id[1] not in variables:
+            raise Exception("Error at:  " + lineno + ': variable not declared: ' + str(id[1]))
+    if id[0] == 'array':
+        if id[1] not in arrays:
+            raise Exception("Error at:  " + lineno + ': array not declared: ' + str(id[1]))
+        if type(id[2]) == type('') and id[2] not in initialized_variables:
+            raise Exception("Error at:  " + lineno + ': variable not initialized: ' + str(id[1]))
     if id in temp_vars:
         raise Exception("Error at: " + lineno + " cannot assign value to iterator")
 
 
 def initialization_check(id, lineno):
-    if id not in initialized_variables:
-        raise Exception("Error at: " + lineno + ' variable not initialized: ' + id)
+    if id[0] == 'variable':
+        if id[1] not in initialized_variables:
+            raise Exception("Error at: " + lineno + ' variable not initialized: ' + id[1])
+    elif id[0] == 'array':
+        if id[1] not in initialized_variables:
+            raise Exception("Error at: " + lineno + ' variable not initialized: ' + id[1])
+        elif id[2] not in initialized_variables:
+            raise Exception("Error at: " + lineno + ' variable not initialized: ' + id[1])
 
 
 def loop_iterator_check(id, lineno):
@@ -640,6 +651,8 @@ def new_variable(var_name, line_number):
     global register_number
     if var_name in variables:
         raise Exception("Duplicated variable name at line: " + line_number)
+    elif var_name in arrays:
+        raise Exception("Duplicated array name at line: " + line_number)
     else:
         variables[var_name] = register_number
         register_number += 1
@@ -654,14 +667,14 @@ def remove_temporary_variable(var_name):
 def new_array(array_name, begin, end, line_number):
     global register_number
     if begin > end:
-        raise Exception('Error in array range')
+        raise Exception('Error in array range at:' + line_number)
     if array_name in arrays:
         raise Exception("Duplicated array name at line: " + line_number)
     if array_name in variables:
-        raise Exception("Duplicated array name at line: " + line_number)
+        raise Exception("Duplicated variable name at line: " + line_number)
     else:
-        arrays[array_name] = begin, end,register_number
-        register_number += end-begin+1
+        arrays[array_name] = begin, end, register_number
+        register_number += end - begin + 1
 
 
 def create_temporary_registers(length):
@@ -672,10 +685,10 @@ def create_temporary_registers(length):
 
 def new_temp_variable():
     global register_number
-    variable = ('variable',f'temp{register_number}')
+    variable = ('variable', f'temp{register_number}')
     new_variable(variable[1], 0)
     initialized_variables.add(variable[1])
-    register_number+=1
+    register_number += 1
     return variable
 
 
@@ -687,8 +700,7 @@ def assign_value_to_variable(value, assigned=None):
     if value[0] == 'variable':
         # initialization_check(value[1], '0')
         # ZAKOMENTOWANE ZEBY PRZESZLO TESTY MGR.SLOWIKA ALE WYDAJE MI SIE ZE POWINNO BYC
-
-        initialized_variables.add(assigned[1])
+        # initialized_variables.add(assigned[1])
         return store_variable(value[1])
     elif value[0] == 'CONSTANT':
         initialized_variables.add(assigned[1])
@@ -706,8 +718,9 @@ def assign_value_to_variable(value, assigned=None):
                    f'\nSTORE {get_addres_from_variable(temp_variable)}' \
                    f'\nLOADI {get_addres_from_variable(temp_variable)}', 7 + LOAD_ARRAY[1] + LOAD_ARRAY_BEGIN[1]
         else:
-            LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(value[1],value[2])))
-            return f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}',2+LOAD_ARRAY[1]
+            LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(value[1], value[2])))
+            return f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}', 2 + \
+                   LOAD_ARRAY[1]
     else:
         return value
 
@@ -719,10 +732,9 @@ def get_addres_from_variable(variable):
         return arrays[variable[1]][2]
 
 
-def get_index_in_array(array_name,index):
+def get_index_in_array(array_name, index):
     array = arrays[array_name]
-    return index -array[0]+array[2]
-
+    return index - array[0] + array[2]
 
 
 def store_variable(variable):
@@ -759,10 +771,9 @@ def get_nested_variables(used_variables, nested_variables):
     return VARIABLES
 
 
-
 def store_variable_or_array(variable):
     if variable[0] == 'variable':
-        return f'\nSTORE {get_addres_from_variable(variable)}',1
+        return f'\nSTORE {get_addres_from_variable(variable)}', 1
     else:
         temp_variable = new_temp_variable()
         temp_variable_for_storage = new_temp_variable()
@@ -778,13 +789,14 @@ def store_variable_or_array(variable):
                    f'\nSTORE {get_addres_from_variable(temp_variable)}{LOAD_ARRAY[0]}' \
                    f'\nADD {get_addres_from_variable(temp_variable)}\nSTORE {get_addres_from_variable(temp_variable)}' \
                    f'\nLOAD {get_addres_from_variable(temp_variable_for_storage)}' \
-                   f'\nSTOREI {get_addres_from_variable(temp_variable)}',9 + LOAD_ARRAY[1] + LOAD_ARRAY_BEGIN[1]
+                   f'\nSTOREI {get_addres_from_variable(temp_variable)}', 9 + LOAD_ARRAY[1] + LOAD_ARRAY_BEGIN[1]
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(variable[1], variable[2])))
             return f'\nSTORE {get_addres_from_variable(temp_variable_for_storage)}' \
                    f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}' \
                    f'\nLOAD {get_addres_from_variable(temp_variable_for_storage)}' \
                    f'\nSTOREI {get_addres_from_variable(temp_variable)}', 4 + LOAD_ARRAY[1]
+
 
 #######################################################################################################################
 
@@ -819,10 +831,11 @@ fw = open(output, "w")
 # print(f'{parsed}')
 # print(parsed.strip())
 print(variables)
-print(arrays)
-# print(initialized_variables)
+# print(arrays)
+print(initialized_variables)
 # print(temporary_variables)
 # fw.write(f'{parsed.strip()}')
 fw.write(PROGRAM)
 
 #       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output2.txt
+
