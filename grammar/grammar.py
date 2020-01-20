@@ -711,8 +711,16 @@ def assign_value_to_variable(value, assigned=None):
         temp_variable = new_temp_variable()
         if type(value[2]) == type(''):
             LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(value)))
-            return f'\nLOAD {variables[value[2]]}\nSTORE {get_addres_from_variable(temp_variable)}{LOAD_ARRAY[0]}\nADD {get_addres_from_variable(temp_variable)}' \
-                   f'\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}', 5 + LOAD_ARRAY[1]
+            LOAD_ARRAY_BEGIN = store_constant(("CONSTANT", arrays[value[1]][0]))
+            return f'{LOAD_ARRAY_BEGIN[0]}\nSTORE {get_addres_from_variable(temp_variable)}' \
+                   f'\nLOAD {variables[value[2]]}\nSUB {get_addres_from_variable(temp_variable)}' \
+                   f'\nSTORE {get_addres_from_variable(temp_variable)}' \
+                   f'{LOAD_ARRAY[0]}' \
+                   f'\nADD {get_addres_from_variable(temp_variable)}' \
+                   f'\nSTORE {get_addres_from_variable(temp_variable)}' \
+                   f'\nLOADI {get_addres_from_variable(temp_variable)}', 7 + LOAD_ARRAY[1] + LOAD_ARRAY_BEGIN[1]
+                # tu trzeba wyliczyc prawdziwy indeks a - minimum + poczatek
+                # teraz jest tylko minimum + a
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(value[1],value[2])))
             return f'{LOAD_ARRAY[0]}\nSTORE {get_addres_from_variable(temp_variable)}\nLOADI {get_addres_from_variable(temp_variable)}',2+LOAD_ARRAY[1]
@@ -778,11 +786,16 @@ def store_variable_or_array(variable):
 
         if type(variable[2]) == type(''):
             LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(variable)))
-            return f'\nSTORE {get_addres_from_variable(temp_variable_for_storage)}\nLOAD {variables[variable[2]]}' \
+            LOAD_ARRAY_BEGIN = store_constant(("CONSTANT", arrays[variable[1]][0]))
+            return f'\nSTORE {get_addres_from_variable(temp_variable_for_storage)}' \
+                   f'{LOAD_ARRAY_BEGIN[0]}' \
+                   f'\nSTORE {get_addres_from_variable(temp_variable)}' \
+                   f'\nLOAD {variables[variable[2]]}' \
+                   f'\nSUB {get_addres_from_variable(temp_variable)}' \
                    f'\nSTORE {get_addres_from_variable(temp_variable)}{LOAD_ARRAY[0]}' \
                    f'\nADD {get_addres_from_variable(temp_variable)}\nSTORE {get_addres_from_variable(temp_variable)}' \
                    f'\nLOAD {get_addres_from_variable(temp_variable_for_storage)}' \
-                   f'\nSTOREI {get_addres_from_variable(temp_variable)}',7 + LOAD_ARRAY[1]
+                   f'\nSTOREI {get_addres_from_variable(temp_variable)}',9 + LOAD_ARRAY[1] + LOAD_ARRAY_BEGIN[1]
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(variable[1], variable[2])))
             return f'\nSTORE {get_addres_from_variable(temp_variable_for_storage)}' \
@@ -824,8 +837,8 @@ except Exception as e:
 fw = open(output, "w")
 # print(f'{parsed}')
 # print(parsed.strip())
-# print(variables)
-# print(arrays)
+print(variables)
+print(arrays)
 # print(initialized_variables)
 # print(temporary_variables)
 # fw.write(f'{parsed.strip()}')
