@@ -828,13 +828,10 @@ except Exception as e:
     print(e)
     exit()
 fw = open(output, "w")
-# print(f'{parsed}')
-# print(parsed.strip())
 print(variables)
 # print(arrays)
 print(initialized_variables)
-# print(temporary_variables)
-# fw.write(f'{parsed.strip()}')
+
 fw.write(PROGRAM)
 
 #       /home/krzyhoo/Desktop/Compiler/virtual_machine/maszyna-wirtualna /home/krzyhoo/Desktop/Compiler/grammar/output2.txt
