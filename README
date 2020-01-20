@@ -1,0 +1,2 @@
+Usage:
+python3 Compiler.py <input_file> <output_file>
