@@ -100,6 +100,7 @@ def p_command_assign(p):
 
     variable_check(p[1][1], '0')
     initialized_variables.add(p[1][1])
+    # print(p[3])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
     STORE = store_variable_or_array(p[1])
     p[0] = str(ASSIGMENT[0]) + f'{STORE[0]}', ASSIGMENT[1] + STORE[1],[]
@@ -702,7 +703,7 @@ def get_addres_from_variable(variable):
     if variable[0] == 'variable':
         return variables[variable[1]]
     else:
-        return arrays[variable[1]]
+        return arrays[variable[1]][2]
 
 
 def get_index_in_array(array_name,index):
@@ -753,7 +754,6 @@ def store_variable_or_array(variable):
     else:
         if type(variable[2]) == type(''):
             LOAD_ARRAY = store_constant(("CONSTANT", get_addres_from_variable(variable)))
-            # return f'{LOAD_ARRAY[0]}\nSTORE 6\nLOADI 6', 2 + LOAD_ARRAY[1]
             return f'\nSTORE 5\nLOAD {variables[variable[2]]}\nSTORE 6{LOAD_ARRAY[0]}\nADD 6\nSTORE 6\nLOAD 5\nSTOREI 6',7 + LOAD_ARRAY[1]
         else:
             LOAD_ARRAY = store_constant(("CONSTANT", get_index_in_array(variable[1], variable[2])))
