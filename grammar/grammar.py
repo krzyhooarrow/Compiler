@@ -18,7 +18,6 @@ register_number = 1  # memory counter
 
 ########################################################################################################################
 # Declaring 10 temporary registers
-
 ########################################################################################################################
 # program -> DECLARE declarations BEGIN commands END
 # 2 | BEGIN commands END
@@ -68,7 +67,6 @@ def p_iterator(p):
 
 
 ########################################################################################################################
-
 # 9 commands -> commands command
 # 10 | command
 ########################################################################################################################
@@ -100,7 +98,6 @@ def p_command_assign(p):
 
     variable_check(p[1][1], '0')
     initialized_variables.add(p[1][1])
-    # print(p[3])
     ASSIGMENT = assign_value_to_variable(p[3], p[1])
     STORE = store_variable_or_array(p[1])
     p[0] = str(ASSIGMENT[0]) + f'{STORE[0]}', ASSIGMENT[1] + STORE[1],[]
@@ -121,7 +118,6 @@ def p_command_while_do(p):
     'command : WHILE condition DO commands ENDWHILE'
     p[0] = (str(p[2][0]) + f'\nJZERO 2\nJUMP {p[4][1] + 2}' + str(p[4][0]) + f'\nJUMP {-(p[4][1] + p[2][1] + 2)}',
             p[2][1] + p[4][1] + 3, [])
-    # cofamy sie o roznice na początek condition!!
 
 
 def p_command_do_while(p):
@@ -180,8 +176,6 @@ def p_command_from_downto(p):
     STORE_FROM = assign_value_to_variable(p[4], p[2])
     STORE_TO = assign_value_to_variable(p[6], temp_var)
 
-    # LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}', STORE_FROM[
-    #     1] + 1
     LOOP_CONSTANTS = str(STORE_FROM[0]) + f'\nSTORE {variables[p[2][1]]}' + \
                      str(STORE_TO[0]) + f'\nSTORE {variables[temp_var[1]]}', STORE_FROM[1] + STORE_TO[1] + 2
 
@@ -373,7 +367,7 @@ def increase_div_value():
 
 def change_value_if_sign_flag_is_on():
     return (f'\nLOAD 1\nJPOS 6\nJNEG 5\nLOAD 8\nSUB 8\nSUB 8\nSTORE 8', 7)
-    # p0 = p4 * -1
+
 
 
 def divide():
@@ -431,7 +425,7 @@ def assert_bigger_value_division(jump_end, jzero_value):
 
 def load_registers_for_division():
     return '\nSUB 0\nINC\nSTORE 9\nDEC\nSTORE 8\nSTORE 1\nSTORE 4\nSTORE 3', 8
-    ### czyszczenie flagi w mnozeniu
+
 
 
 ########################################################################################################################
@@ -470,7 +464,6 @@ def check_returned_sign():
 
 def check_if_divider_equals_0_or_1(end_distance):
     return (f'\nLOAD 7\nJZERO 7\nDEC\nJZERO 5\nINC\nINC\nJZERO 2\nJUMP 3\nSUB 0\nJUMP {end_distance}', 10)
-    #### zwraca b jezeli jest w zakresie i skacze na koniec(-1,1)
 
 
 def update_value():
@@ -479,12 +472,10 @@ def update_value():
 
 def clear_sign_flag_and_set_power_to_0():
     return f'\nLOAD 1\nSUB 0\nSTORE 1\nSTORE 9', 4
-    ### wynik jest kurwa w 5
 
 
-def change_modulo_if_flag_on():  # skocz na koniec
+def change_modulo_if_flag_on():
     return f'\nLOAD 1\nJZERO 7\nLOAD 7\nJPOS 11\nLOAD 5\nSUB 5\nSUB 5\nJUMP 6\nLOAD 7\nJPOS 3\nADD 5\nJUMP 2\nSUB 5\nSTORE 5', 14
-    ## jak byly tych samych znakow to trzeba przemnozyc przez -1 jezeli 2 wartosc jest jneg. Dla roznych jest git wynik juz
 
 
 def if_equals_0_end(jump_dist):
@@ -506,7 +497,6 @@ def find_modulus():
 
 def reset_power():
     return (f'\nSUB 0\nSTORE 9', 2)
-
 
 ########################################################################################################################
 # 29 condition -> value EQ value
@@ -646,8 +636,6 @@ def loop_iterator_check(id, lineno):
 
 
 ########################################################################################################################
-
-# Function creates new variable and stores its address in dict variables.
 def new_variable(var_name, line_number):
     global register_number
     if var_name in variables:
