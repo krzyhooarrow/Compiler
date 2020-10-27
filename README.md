@@ -99,7 +99,7 @@ Table below contains possible orders, their interpretation and cost .
 | ***JPOS j*** |  if ( _p[0]_ > 0 ) then {_k_ = _j_} else {_k++_}  |***1***|
 | ***JZERO j*** |  if ( _p[0]_ = 0 ) then {_k_ = _j_} else {_k++_}  |***1***|
 | ***JNEG j*** |  if ( _p[0]_ < 0 ) then {_k_ = _j_} else {_k++_}  |***1***|
-| ***HALT*** |  Ends program |0|
+| ***HALT*** |  Ends program |***0***|
 
 
 ### Installation
